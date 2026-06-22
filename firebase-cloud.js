@@ -4,7 +4,7 @@
 */
 
 const healthRadarFirebaseConfig = {
-  "apiKey": "AIzaSyBu1T70FbuvkgTEaumsLB9sd0uj3hND5Y",
+  "apiKey": "AIzaSyBzulT70FbuvkgTEaumslB9sd0uj3hND5Y",
   "authDomain": "health-radar-f3c53.firebaseapp.com",
   "projectId": "health-radar-f3c53",
   "storageBucket": "health-radar-f3c53.firebasestorage.app",
@@ -29,7 +29,17 @@ function initHealthRadarCloud(){
       setCloudStatus('Firebase SDK не завантажився. Відкрийте сайт через https або перевірте інтернет.');
       return;
     }
-    cloudApp = firebase.apps.length ? firebase.app() : firebase.initializeApp(healthRadarFirebaseConfig);
+    const savedConfig = (() => {
+      try {
+        const rawState = JSON.parse(localStorage.getItem('healthRadarAI_v1') || '{}');
+        const raw = rawState?.settings?.firebaseConfig;
+        return raw ? JSON.parse(raw) : null;
+      } catch (e) {
+        return null;
+      }
+    })();
+    const finalFirebaseConfig = savedConfig || healthRadarFirebaseConfig;
+    cloudApp = firebase.apps.length ? firebase.app() : firebase.initializeApp(finalFirebaseConfig);
     cloudAuth = firebase.auth();
     cloudDb = firebase.firestore();
     cloudReady = true;
