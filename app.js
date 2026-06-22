@@ -1411,3 +1411,283 @@ document.addEventListener('keydown', function(e){
 document.addEventListener('click', function(e){
   if(e.target && e.target.id === 'quickModal') HR_CLOSE_QUICK();
 });
+
+
+/* ===== Health Radar 1.6.0: Hybrid AI Assistant ===== */
+
+function aiStateSummary(){
+  const bp = [...(state.bp||[])].sort((a,b)=>new Date(a.time)-new Date(b.time));
+  const meds = [...(state.meds||[])].sort((a,b)=>new Date(a.time)-new Date(b.time));
+  const events = [...(state.events||[])].sort((a,b)=>new Date(a.time)-new Date(b.time));
+  const weather = [...(state.weather||[])].sort((a,b)=>new Date(a.time)-new Date(b.time));
+
+  const lastBP = bp.at(-1);
+  const lastWeather = weather.filter(w=>new Date(w.time)<=new Date()).at(-1) || weather.at(-1);
+  const recentBP = bp.slice(-10);
+  const recentEvents = events.slice(-20);
+  const recentMeds = meds.slice(-10);
+
+  const avg = arr => arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : null;
+  const avgSys = avg(recentBP.map(x=>+x.sys).filter(Boolean));
+  const avgDia = avg(recentBP.map(x=>+x.dia).filter(Boolean));
+  const avgPulse = avg(recentBP.map(x=>+x.pulse).filter(Boolean));
+
+  const highCount = recentBP.filter(x=>x.sys>=140 || x.dia>=90).length;
+  const crisis = recentBP.filter(x=>x.sys>=180 || x.dia>=120).length;
+
+  return {
+    counts:{bp:bp.length, meds:meds.length, events:events.length, weather:weather.length},
+    lastBP,
+    lastWeather,
+    averages:{sys:avgSys, dia:avgDia, pulse:avgPulse},
+    highCount,
+    crisis,
+    recentBP,
+    recentMeds,
+    recentEvents,
+    recentWeather: weather.slice(-12),
+    city: state.city || null,
+    settings: state.settings || {}
+  };
+}
+
+function buildLocalAIAnswer(question){
+  const s = aiStateSummary();
+  const lines = [];
+  const q = (question||'').toLowerCase();
+
+  lines.push('Локальний AI-висновок по ваших записах:');
+
+  if(!s.counts.bp){
+    return 'Поки що немає записів тиску. Додайте хоча б 3–6 замірів АТ, пульс, сон/стрес/каву та ліки — тоді аналіз буде кориснішим.';
+  }
+
+  if(s.lastBP){
+    const risk = (s.lastBP.sys>=180 || s.lastBP.dia>=120) ? 'критично високий' :
+                 (s.lastBP.sys>=140 || s.lastBP.dia>=90) ? 'підвищений' : 'відносно стабільний';
+    lines.push(`\nОстанній АТ: ${s.lastBP.sys}/${s.lastBP.dia}, пульс ${s.lastBP.pulse || '—'} — стан: ${risk}.`);
+  }
+
+  if(s.averages.sys){
+    lines.push(`Середнє за останні ${s.recentBP.length} записів: ${s.averages.sys.toFixed(1)}/${s.averages.dia.toFixed(1)}, пульс ${s.averages.pulse ? s.averages.pulse.toFixed(1) : '—'}.`);
+  }
+
+  if(s.highCount){
+    lines.push(`Підвищені значення серед останніх записів: ${s.highCount} з ${s.recentBP.length}.`);
+  }
+
+  if(s.crisis){
+    lines.push(`\n⚠️ Увага: є записи рівня 180/120 або вище. Якщо це реальний замір або є біль у грудях, слабкість, порушення мовлення, сильний головний біль — потрібна невідкладна допомога.`);
+  }
+
+  const triggerText = localTriggerAnalysis(s);
+  if(triggerText) lines.push('\nЙмовірні тригери:\n' + triggerText);
+
+  if(q.includes('ліки') || q.includes('допом') || q.includes('ефект')){
+    lines.push('\nЛіки:\n' + localMedAnalysisText(s));
+  }
+
+  if(q.includes('погода') || q.includes('атмос') || q.includes('голов') || q.includes('шум')){
+    lines.push('\nПогода/неврологія:\n' + localWeatherNeuroText(s));
+  }
+
+  lines.push('\nЩо варто зробити далі:');
+  lines.push('• фіксувати АТ до ліків і через 30/60/120 хв після прийому;');
+  lines.push('• записувати сон, стрес, каву, шум у вухах/головний біль навіть коли симптом слабкий;');
+  lines.push('• для лікаря корисно мати 7–14 днів регулярних замірів.');
+
+  return lines.join('\n');
+}
+
+function localTriggerAnalysis(s){
+  const ev = s.recentEvents || [];
+  if(!ev.length) return 'Поки мало подій/тригерів. Додавайте сон, стрес, каву, алкоголь, симптоми.';
+
+  const byType = {};
+  ev.forEach(e=>{
+    byType[e.type] = byType[e.type] || [];
+    byType[e.type].push(+e.value || 0);
+  });
+
+  const labels = {
+    stress:'😡 Стрес',
+    coffee:'☕ Кава',
+    alcohol:'🍺 Алкоголь',
+    activity:'🏃 Навантаження',
+    sleep:'😴 Сон',
+    headache:'🤕 Головний біль',
+    tinnitus:'👂 Шум у вухах',
+    dizziness:'😵 Запаморочення',
+    fatigue:'😴 Втома'
+  };
+
+  const rows = Object.entries(byType).map(([k,arr])=>{
+    const avg = arr.reduce((a,b)=>a+b,0)/arr.length;
+    let note = '';
+    if(k==='stress' && avg>=6) note='високий середній стрес';
+    if(k==='sleep' && avg<6) note='мало сну';
+    if(k==='coffee' && avg>=2) note='багато кави';
+    if(['headache','tinnitus','dizziness','fatigue'].includes(k) && avg>=5) note='виражений симптом';
+    return `• ${labels[k]||k}: записів ${arr.length}, середнє ${avg.toFixed(1)}${note ? ' — ' + note : ''}`;
+  });
+
+  return rows.join('\n');
+}
+
+function localMedAnalysisText(s){
+  if(!s.recentMeds.length) return 'Записів ліків поки немає. Для аналізу потрібні: час прийому, доза і контрольний АТ після прийому.';
+  const lines = s.recentMeds.map(m=>{
+    let eff = null;
+    if(typeof medEffect === 'function'){
+      try{ eff = medEffect(m); }catch(e){}
+    }
+    return `• ${m.name || 'ліки'} ${m.dose || ''} — ${m.time ? new Date(m.time).toLocaleString('uk-UA') : ''}${eff?.text ? '; ' + eff.text : ''}`;
+  });
+  return lines.join('\n');
+}
+
+function localWeatherNeuroText(s){
+  const lines = [];
+  if(s.lastWeather){
+    lines.push(`Остання погода: ${s.lastWeather.temp ?? '—'}°C, атм. тиск ${s.lastWeather.pressure ?? '—'} гПа, вологість ${s.lastWeather.humidity ?? '—'}%, вітер ${s.lastWeather.wind ?? '—'}.`);
+  } else {
+    lines.push('Погодних записів поки немає.');
+  }
+
+  const neuro = (s.recentEvents||[]).filter(e=>['headache','tinnitus','dizziness','fatigue'].includes(e.type));
+  if(neuro.length){
+    const high = neuro.filter(e=>+e.value>=5);
+    lines.push(`Неврологічних симптомів серед останніх подій: ${neuro.length}, сильних 5/10 і вище: ${high.length}.`);
+  } else {
+    lines.push('Неврологічних симптомів поки мало для висновку.');
+  }
+
+  return lines.join('\n');
+}
+
+function addAIMessage(role, text, cls=''){
+  const log = document.getElementById('aiChatLog');
+  if(!log) return;
+  const div = document.createElement('div');
+  div.className = `ai-msg ${role==='user'?'ai-user':'ai-bot'} ${cls}`;
+  div.textContent = text;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+function getAIMode(){
+  return document.querySelector('input[name="aiMode"]:checked')?.value || 'local';
+}
+
+function toggleAISettings(){
+  document.getElementById('aiSettingsBox')?.classList.toggle('hidden');
+}
+
+function saveAISettings(){
+  const key = document.getElementById('openaiApiKey')?.value || '';
+  const model = document.getElementById('openaiModel')?.value || 'gpt-4o-mini';
+  localStorage.setItem('healthRadarOpenAIKey', key.trim());
+  localStorage.setItem('healthRadarOpenAIModel', model.trim());
+  alert('AI налаштування збережено локально.');
+}
+
+function clearAISettings(){
+  localStorage.removeItem('healthRadarOpenAIKey');
+  localStorage.removeItem('healthRadarOpenAIModel');
+  const k=document.getElementById('openaiApiKey'); if(k) k.value='';
+  alert('AI ключ очищено.');
+}
+
+function loadAISettings(){
+  const k=document.getElementById('openaiApiKey');
+  const m=document.getElementById('openaiModel');
+  if(k) k.value = localStorage.getItem('healthRadarOpenAIKey') || '';
+  if(m) m.value = localStorage.getItem('healthRadarOpenAIModel') || 'gpt-4o-mini';
+}
+
+function askPresetAI(text){
+  openModal('aiAssistantModal');
+  const q = document.getElementById('aiQuestion');
+  if(q) q.value = text;
+  setTimeout(()=>sendAIQuestion(null, text), 50);
+}
+
+async function sendAIQuestion(e, presetText=null){
+  if(e) e.preventDefault();
+  const qEl = document.getElementById('aiQuestion');
+  const question = (presetText || qEl?.value || '').trim();
+  if(!question) return;
+
+  addAIMessage('user', question);
+  if(qEl) qEl.value = '';
+
+  if(getAIMode()==='gpt'){
+    await askOpenAI(question);
+  } else {
+    const answer = buildLocalAIAnswer(question);
+    addAIMessage('bot', answer);
+    const prev=document.getElementById('aiAssistantPreview');
+    if(prev) prev.textContent = answer.slice(0,800);
+  }
+}
+
+async function askOpenAI(question){
+  const key = localStorage.getItem('healthRadarOpenAIKey') || document.getElementById('openaiApiKey')?.value || '';
+  const model = localStorage.getItem('healthRadarOpenAIModel') || document.getElementById('openaiModel')?.value || 'gpt-4o-mini';
+  if(!key){
+    addAIMessage('bot', 'Для режиму ChatGPT API потрібно вставити OpenAI API key у ⚙️ API. Поки можу відповісти локально:\n\n' + buildLocalAIAnswer(question), 'ai-warn');
+    return;
+  }
+
+  addAIMessage('bot', 'Думаю через ChatGPT API...');
+
+  const summary = aiStateSummary();
+  const system = `Ти медичний аналітичний асистент для особистого щоденника тиску. Відповідай українською. Не став діагноз. Не призначай лікування. Пояснюй закономірності в даних і радь, що обговорити з лікарем. При небезпечних симптомах радь невідкладну допомогу.`;
+  const user = `Питання користувача: ${question}\n\nДані щоденника JSON:\n${JSON.stringify(summary, null, 2)}`;
+
+  try{
+    const r = await fetch('https://api.openai.com/v1/chat/completions', {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization':'Bearer ' + key
+      },
+      body: JSON.stringify({
+        model,
+        messages:[
+          {role:'system', content:system},
+          {role:'user', content:user}
+        ],
+        temperature:0.2
+      })
+    });
+    if(!r.ok){
+      const t = await r.text();
+      throw new Error(t.slice(0,500));
+    }
+    const data = await r.json();
+    const txt = data.choices?.[0]?.message?.content || 'AI не повернув відповідь.';
+    addAIMessage('bot', txt);
+    const prev=document.getElementById('aiAssistantPreview');
+    if(prev) prev.textContent = txt.slice(0,800);
+  }catch(err){
+    addAIMessage('bot', 'Помилка ChatGPT API: ' + err.message + '\n\nЛокальний аналіз:\n' + buildLocalAIAnswer(question), 'ai-warn');
+  }
+}
+
+function initAIAssistant(){
+  loadAISettings();
+  const log=document.getElementById('aiChatLog');
+  if(log && !log.dataset.ready){
+    log.dataset.ready='1';
+    addAIMessage('bot', 'Привіт. Я можу локально аналізувати ваш тиск, пульс, ліки, погоду і симптоми. Для глибшого аналізу можна увімкнути режим ChatGPT API.');
+  }
+  document.querySelectorAll('input[name="aiMode"]').forEach(r=>{
+    r.addEventListener('change', ()=>{
+      const s=document.getElementById('aiModeStatus');
+      if(s) s.textContent = getAIMode()==='gpt' ? 'ChatGPT API режим' : 'Локальний режим';
+    });
+  });
+}
+
+window.addEventListener('load', initAIAssistant);

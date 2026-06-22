@@ -13,10 +13,11 @@
   <div class="app">
     <header class="topbar">
       <div>
-        <h1>🫀 Мій тиск AI <span class="version-badge">v1.5.8</span></h1>
+        <h1>🫀 Мій тиск AI <span class="version-badge">v1.6.1</span></h1>
         <p>Особистий медичний аналітик: тиск, пульс, ліки, погода, тригери</p>
       </div>
       <div class="top-actions">
+        <button class="ghost" onclick="openModal('aiAssistantModal')">🤖 AI Асистент</button>
         <button class="ghost" onclick="openCloudPanel()">☁️ Хмара</button>
         <button class="ghost" onclick="openModal('settingsModal')">⚙️ Налаштування</button>
         <button class="primary" onclick="openModal('quickModal')">⚡ Швидкий запис</button>
@@ -388,6 +389,54 @@
     </div>
   </div>
 
+
+  <!-- AI Assistant Modal -->
+  <div id="aiAssistantModal" class="modal">
+    <div class="modal-content ai-assistant-modal">
+      <div class="modal-head">
+        <h2>🤖 AI Асистент</h2>
+        <button type="button" onclick="closeModal('aiAssistantModal')">✕</button>
+      </div>
+
+      <div class="ai-mode-bar">
+        <label class="mini-check"><input type="radio" name="aiMode" value="local" checked> Локальний AI</label>
+        <label class="mini-check"><input type="radio" name="aiMode" value="gpt"> ChatGPT API</label>
+        <button type="button" onclick="toggleAISettings()">⚙️ API</button>
+        <span id="aiModeStatus" class="badge-mini">Локальний режим</span>
+      </div>
+
+      <div id="aiSettingsBox" class="ai-settings hidden">
+        <label>OpenAI API key
+          <input type="password" id="openaiApiKey" placeholder="sk-..." autocomplete="off"/>
+        </label>
+        <label>Модель
+          <input id="openaiModel" value="gpt-4o-mini"/>
+        </label>
+        <div class="row">
+          <button type="button" onclick="saveAISettings()">💾 Зберегти</button>
+          <button type="button" onclick="clearAISettings()">🗑 Очистити</button>
+        </div>
+        <p class="muted">Ключ зберігається тільки у вашому браузері. Не додавайте його в GitHub.</p>
+      </div>
+
+      <div id="aiChatLog" class="ai-chat-log"></div>
+
+      <div class="ai-quick-prompts">
+        <button type="button" onclick="askPresetAI('Зроби короткий висновок за моїми останніми записами.')">Короткий висновок</button>
+        <button type="button" onclick="askPresetAI('Які тригери найімовірніше впливають на тиск?')">Тригери</button>
+        <button type="button" onclick="askPresetAI('Проаналізуй ліки і контрольні заміри після них.')">Ліки</button>
+        <button type="button" onclick="askPresetAI('Чи є ризик через погоду сьогодні або завтра?')">Погода</button>
+      </div>
+
+      <form class="ai-input-row" onsubmit="sendAIQuestion(event)">
+        <textarea id="aiQuestion" rows="2" placeholder="Наприклад: чому сьогодні міг піднятися тиск?"></textarea>
+        <button class="primary">Запитати</button>
+      </form>
+
+      <p class="muted small-note">AI не замінює лікаря. При АТ 180/120, болю в грудях, слабкості руки/ноги, порушенні мовлення або сильному головному болю — звертайтесь по невідкладну допомогу.</p>
+    </div>
+  </div>
+
   <!-- Cloud Modal -->
   <div id="cloudModal" class="modal">
     <div class="modal-content">
@@ -431,6 +480,7 @@
   <script src="app.js"></script>
   <script src="quick-fix.js"></script>
   <script src="firebase-cloud.js"></script>
+  <script src="hotfix-161.js"></script>
   <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{});}</script>
 </body>
 </html>
