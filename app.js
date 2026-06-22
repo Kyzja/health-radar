@@ -742,3 +742,89 @@ function initEditDeleteStage(){
   }catch(e){}
 }
 window.addEventListener('load', initEditDeleteStage);
+
+
+/* ===== Health Radar 1.3: weather autofix/status ===== */
+
+function weatherIntervalHours(){
+  return +(document.getElementById('weatherInterval')?.value || state.settings?.weatherInterval || 2);
+}
+
+function latestArchiveWeather(){
+  return [...(state.weather||[])].sort((a,b)=>new Date(b.time)-new Date(a.time))[0] || null;
+}
+
+function nextWeatherSlot(fromDate=new Date()){
+  const step = weatherIntervalHours();
+  const d = new Date(fromDate);
+  d.setMinutes(0,0,0);
+  const h = d.getHours();
+  const nextH = Math.ceil((h + 0.001) / step) * step;
+  if(nextH >= 24){
+    d.setDate(d.getDate()+1);
+    d.setHours(0,0,0,0);
+  } else {
+    d.setHours(nextH,0,0,0);
+  }
+  return d;
+}
+
+function weatherAutoStatusText(){
+  const latest = latestArchiveWeather();
+  const step = weatherIntervalHours();
+  const next = nextWeatherSlot();
+  if(!latest){
+    return `Автопогода: архів ще порожній. Інтервал: кожні ${step} год. Натисніть “Оновити пропущені дані”.`;
+  }
+  const ageH = (new Date() - new Date(latest.time)) / 3600000;
+  const status = ageH <= step + 0.5 ? '✅ актуально' : '⚠️ є пропущені записи';
+  return `Автопогода: ${status}. Останній архівний запис: ${fmt.format(new Date(latest.time))}. Наступний слот: ${fmt.format(next)}. Якщо сайт був закритий — пропуски дозаписуються при відкритті.`;
+}
+
+function renderWeatherAutoStatus(){
+  const el = document.getElementById('weatherAutoStatus');
+  if(el) el.textContent = weatherAutoStatusText();
+}
+
+/* Override dashboard weather card to show source clearly */
+const __oldRenderDashboardWeatherFix = renderDashboard;
+renderDashboard = function(){
+  __oldRenderDashboardWeatherFix();
+
+  const latest = latestArchiveWeather();
+  if(latest){
+    const weatherNow = document.getElementById('weatherNow');
+    const weatherMeta = document.getElementById('weatherMeta');
+    const atmPressure = document.getElementById('atmPressure');
+    if(weatherNow) weatherNow.textContent = `${Math.round(latest.temp)}°C`;
+    if(weatherMeta) {
+      weatherMeta.innerHTML = `${state.city?.name||''} · вологість ${latest.humidity}% · вітер ${latest.wind} м/с <span class="weather-source-note">з архіву: ${fmt.format(new Date(latest.time))}</span>`;
+    }
+    if(atmPressure) atmPressure.textContent = `${Number(latest.pressure).toFixed(1)} гПа`;
+  }
+  renderWeatherAutoStatus();
+};
+
+/* Make fetchMissingWeather update status and cloud */
+const __oldFetchMissingWeather = fetchMissingWeather;
+fetchMissingWeather = async function(silent=false){
+  const r = await __oldFetchMissingWeather(silent);
+  renderWeatherAutoStatus();
+  if(typeof scheduleCloudSave === 'function') scheduleCloudSave();
+  return r;
+};
+
+const __oldRecordCurrentWeather = recordCurrentWeather;
+recordCurrentWeather = async function(){
+  const r = await __oldRecordCurrentWeather();
+  renderWeatherAutoStatus();
+  if(typeof scheduleCloudSave === 'function') scheduleCloudSave();
+  return r;
+};
+
+/* On opening site: refresh missed weather once, then repeat every 30 minutes */
+function startWeatherAutoRecorder(){
+  setTimeout(()=>fetchMissingWeather(true), 2500);
+  setInterval(()=>fetchMissingWeather(true), 30*60*1000);
+}
+window.addEventListener('load', startWeatherAutoRecorder);
