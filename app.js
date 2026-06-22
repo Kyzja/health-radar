@@ -547,3 +547,198 @@ function exportForCloud(){
   const blob=new Blob([JSON.stringify({updatedAt:new Date().toISOString(),data:state},null,2)],{type:'application/json'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='health-radar-cloud-export.json'; a.click();
 }
+
+
+/* ===== Health Radar 1.2: edit/delete improvements ===== */
+function markDirtyAndRender(){
+  if (typeof renderAll === 'function') renderAll();
+  if (typeof scheduleCloudSave === 'function') scheduleCloudSave();
+}
+function confirmDelete(text){ return confirm(text || 'Видалити запис?'); }
+function selectedIds(selector){ return Array.from(document.querySelectorAll(selector + ':checked')).map(x=>x.value); }
+function toggleAll(prefix, checked){ document.querySelectorAll(`.${prefix}-check`).forEach(x=>x.checked=checked); }
+
+function deleteSelectedBP(){
+  const ids = selectedIds('.bp-check');
+  if (!ids.length) return alert('Виберіть записи для видалення.');
+  if (!confirmDelete(`Видалити вибрані записи тиску: ${ids.length}?`)) return;
+  state.bp = state.bp.filter(x => !ids.includes(x.id));
+  markDirtyAndRender();
+}
+function deleteSelectedMeds(){
+  const ids = selectedIds('.med-check');
+  if (!ids.length) return alert('Виберіть записи ліків для видалення.');
+  if (!confirmDelete(`Видалити вибрані записи ліків: ${ids.length}?`)) return;
+  state.meds = state.meds.filter(x => !ids.includes(x.id));
+  markDirtyAndRender();
+}
+function deleteSelectedEvents(){
+  const ids = selectedIds('.event-check');
+  if (!ids.length) return alert('Виберіть події для видалення.');
+  if (!confirmDelete(`Видалити вибрані події: ${ids.length}?`)) return;
+  state.events = state.events.filter(x => !ids.includes(x.id));
+  markDirtyAndRender();
+}
+function deleteSelectedWeather(){
+  const ids = selectedIds('.weather-check');
+  if (!ids.length) return alert('Виберіть записи погоди для видалення.');
+  if (!confirmDelete(`Видалити вибрані записи погоди: ${ids.length}?`)) return;
+  state.weather = state.weather.filter(x => !ids.includes(x.id));
+  markDirtyAndRender();
+}
+function numOrNull(v){ return v === '' || v == null ? null : +v; }
+
+function editWeather(id){
+  const w = state.weather.find(x => x.id === id);
+  if (!w) return;
+  document.getElementById('weatherEditId').value = w.id;
+  document.getElementById('weatherEditTime').value = nowLocalInput(new Date(w.time));
+  document.getElementById('weatherEditTemp').value = w.temp ?? '';
+  document.getElementById('weatherEditPressure').value = w.pressure ?? '';
+  document.getElementById('weatherEditHumidity').value = w.humidity ?? '';
+  document.getElementById('weatherEditWind').value = w.wind ?? '';
+  document.getElementById('weatherEditPrecip').value = w.precip ?? '';
+  openModal('weatherEditModal');
+}
+function saveWeatherEdit(e){
+  e.preventDefault();
+  const id = document.getElementById('weatherEditId').value || uid();
+  const rec = {
+    id,
+    time: new Date(document.getElementById('weatherEditTime').value).toISOString(),
+    temp: numOrNull(document.getElementById('weatherEditTemp').value),
+    pressure: numOrNull(document.getElementById('weatherEditPressure').value),
+    humidity: numOrNull(document.getElementById('weatherEditHumidity').value),
+    wind: numOrNull(document.getElementById('weatherEditWind').value),
+    precip: numOrNull(document.getElementById('weatherEditPrecip').value)
+  };
+  const i = state.weather.findIndex(x=>x.id===id);
+  if (i>=0) state.weather[i] = rec; else state.weather.push(rec);
+  closeModal('weatherEditModal');
+  markDirtyAndRender();
+}
+function delWeather(id){
+  if (!confirmDelete('Видалити запис погоди?')) return;
+  state.weather = state.weather.filter(x => x.id !== id);
+  markDirtyAndRender();
+}
+
+renderEntries = function(){
+  const rows=[...state.bp].sort((a,b)=>new Date(b.time)-new Date(a.time)).map(r=>`
+    <tr>
+      <td class="select-col"><input class="bp-check" type="checkbox" value="${r.id}"></td>
+      <td>${fmt.format(new Date(r.time))}</td>
+      <td><b>${r.sys}/${r.dia}</b></td>
+      <td>${r.pulse}</td>
+      <td>${r.wellbeing}/10</td>
+      <td>${escapeHtml(r.note||'')}</td>
+      <td class="actions"><button onclick="editBP('${r.id}')">✏️</button><button class="danger" onclick="delBP('${r.id}')">🗑</button></td>
+    </tr>`).join('');
+  document.getElementById('entriesTable').innerHTML =
+    `<div class="row wrap" style="margin-bottom:10px">
+      <label class="mini-check"><input type="checkbox" onchange="toggleAll('bp', this.checked)"> вибрати всі</label>
+      <span class="badge-mini">Записів: ${state.bp.length}</span>
+    </div>
+    <table><thead><tr><th></th><th>Дата</th><th>АТ</th><th>Пульс</th><th>Стан</th><th>Примітка</th><th>Дії</th></tr></thead>
+    <tbody>${rows||'<tr><td colspan=7>Записів немає</td></tr>'}</tbody></table>`;
+};
+
+renderMeds = function(){
+  const rows=[...state.meds].sort((a,b)=>new Date(b.time)-new Date(a.time)).map(m=>{
+    const eff = medEffect(m);
+    return `<tr>
+      <td class="select-col"><input class="med-check" type="checkbox" value="${m.id}"></td>
+      <td>${fmt.format(new Date(m.time))}</td>
+      <td><b>${escapeHtml(m.name)}</b></td>
+      <td>${escapeHtml(m.dose||'')}</td>
+      <td>${eff.text}</td>
+      <td>${escapeHtml(m.note||'')}</td>
+      <td class="actions"><button onclick="editMed('${m.id}')">✏️</button><button class="danger" onclick="delMed('${m.id}')">🗑</button></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('medTable').innerHTML =
+    `<div class="row wrap" style="margin-bottom:10px">
+      <label class="mini-check"><input type="checkbox" onchange="toggleAll('med', this.checked)"> вибрати всі</label>
+      <span class="badge-mini">Записів: ${state.meds.length}</span>
+    </div>
+    <table><thead><tr><th></th><th>Дата</th><th>Ліки</th><th>Доза</th><th>Ефект</th><th>Примітка</th><th>Дії</th></tr></thead>
+    <tbody>${rows||'<tr><td colspan=7>Немає записів</td></tr>'}</tbody></table>`;
+  const groups={};
+  state.meds.forEach(m=>{
+    const e=medEffect(m); if(e.sysDelta===null) return;
+    const k=m.name.toLowerCase(); groups[k]=groups[k]||{name:m.name,n:0,sys:0,dia:0}; groups[k].n++; groups[k].sys+=e.sysDelta; groups[k].dia+=e.diaDelta;
+  });
+  document.getElementById('medAnalysis').innerHTML = Object.values(groups).map(g=>`<div class="list-item"><b>${escapeHtml(g.name)}</b><br>Прийомів з контрольним заміром: ${g.n}<br>Середній ефект: ${(g.sys/g.n).toFixed(1)}/${(g.dia/g.n).toFixed(1)} мм рт.ст.</div>`).join('') || '<div class="muted">Потрібні заміри до/після прийому.</div>';
+};
+
+renderWeather = function(){
+  const rows=[...state.weather].sort((a,b)=>new Date(b.time)-new Date(a.time)).slice(0,1000).map(w=>`
+    <tr>
+      <td class="select-col"><input class="weather-check" type="checkbox" value="${w.id}"></td>
+      <td>${fmt.format(new Date(w.time))}</td>
+      <td>${w.temp==null?'—':Number(w.temp).toFixed(1)+'°'}</td>
+      <td>${w.pressure==null?'—':Number(w.pressure).toFixed(1)}</td>
+      <td>${w.humidity??'—'}%</td>
+      <td>${w.wind??'—'}</td>
+      <td>${w.precip??'—'}</td>
+      <td class="actions"><button onclick="editWeather('${w.id}')">✏️</button><button class="danger" onclick="delWeather('${w.id}')">🗑</button></td>
+    </tr>`).join('');
+  document.getElementById('weatherTable').innerHTML =
+    `<div class="row wrap" style="margin-bottom:10px">
+      <button onclick="deleteSelectedWeather()">🗑 Видалити вибрані</button>
+      <label class="mini-check"><input type="checkbox" onchange="toggleAll('weather', this.checked)"> вибрати всі</label>
+      <span class="badge-mini">Погода: ${state.weather.length}</span>
+    </div>
+    <table><thead><tr><th></th><th>Дата</th><th>Темп</th><th>Тиск гПа</th><th>Вологість</th><th>Вітер</th><th>Опади</th><th>Дії</th></tr></thead>
+    <tbody>${rows||'<tr><td colspan=8>Архів порожній</td></tr>'}</tbody></table>`;
+};
+
+renderQuickEvents = function(){
+  const list=document.getElementById('quickEventsList'); if(!list) return;
+  const items=[...state.events].sort((a,b)=>new Date(b.time)-new Date(a.time)).slice(0,50).map(e=>`
+    <div class="list-item">
+      <label class="mini-check"><input class="event-check" type="checkbox" value="${e.id}"> <b>${quickLabels[e.type]||e.type}</b> · ${e.value}</label>
+      <span class="muted">${fmt.format(new Date(e.time))} ${escapeHtml(e.note||'')}</span><br>
+      <button onclick="editEvent('${e.id}')">✏️</button>
+      <button class="danger" onclick="delEvent('${e.id}')">🗑</button>
+    </div>`).join('');
+  list.innerHTML =
+    `<div class="row wrap" style="margin-bottom:10px"><button onclick="deleteSelectedEvents()">🗑 Видалити вибрані</button><span class="badge-mini">Подій: ${state.events.length}</span></div>` + (items || '<div class="muted">Подій немає.</div>');
+};
+
+delBP = function(id){
+  if(confirmDelete('Видалити запис тиску?')){
+    state.bp=state.bp.filter(x=>x.id!==id);
+    markDirtyAndRender();
+  }
+};
+delMed = function(id){
+  if(confirmDelete('Видалити прийом ліків?')){
+    state.meds=state.meds.filter(x=>x.id!==id);
+    markDirtyAndRender();
+  }
+};
+delEvent = function(id){
+  if(confirmDelete('Видалити подію?')){
+    state.events=state.events.filter(x=>x.id!==id);
+    markDirtyAndRender();
+  }
+};
+
+const __oldSaveBP = saveBP;
+saveBP = function(e){ __oldSaveBP(e); if (typeof scheduleCloudSave === 'function') scheduleCloudSave(); };
+const __oldSaveMed = saveMed;
+saveMed = function(e){ __oldSaveMed(e); if (typeof scheduleCloudSave === 'function') scheduleCloudSave(); };
+const __oldSaveQuickEvent = saveQuickEvent;
+saveQuickEvent = function(e){ __oldSaveQuickEvent(e); if (typeof scheduleCloudSave === 'function') scheduleCloudSave(); };
+
+function initEditDeleteStage(){
+  try{
+    const el=document.getElementById('autoSyncToggle');
+    if(el){
+      const stored=localStorage.getItem('healthRadarAutoSync');
+      el.checked = stored === null ? true : stored === 'true';
+    }
+  }catch(e){}
+}
+window.addEventListener('load', initEditDeleteStage);

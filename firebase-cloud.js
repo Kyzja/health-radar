@@ -295,3 +295,24 @@ function openCloudPanel(){
 }
 
 window.addEventListener('load', initHealthRadarCloud);
+
+
+/* Health Radar 1.2: autosync toggle */
+function isAutoSyncEnabled(){
+  const el = document.getElementById('autoSyncToggle');
+  if (!el) return localStorage.getItem('healthRadarAutoSync') !== 'false';
+  return el.checked;
+}
+function toggleAutoSync(){
+  const el = document.getElementById('autoSyncToggle');
+  localStorage.setItem('healthRadarAutoSync', el && el.checked ? 'true' : 'false');
+  setCloudStatus(el && el.checked ? '✅ Автосинхронізація увімкнена' : '⏸ Автосинхронізація вимкнена');
+}
+if (typeof scheduleCloudSave === 'function' && !window.__scheduleCloudSavePatched) {
+  window.__scheduleCloudSavePatched = true;
+  const __oldScheduleCloudSave = scheduleCloudSave;
+  scheduleCloudSave = function(){
+    if (!isAutoSyncEnabled()) return;
+    return __oldScheduleCloudSave.apply(this, arguments);
+  };
+}

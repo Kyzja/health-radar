@@ -54,6 +54,7 @@
         <div class="row wrap cloud-actions-mini">
           <button onclick="cloudSignIn()">Google</button>
           <button onclick="cloudSaveNow()">Зберегти</button>
+          <label class="mini-check"><input type="checkbox" id="autoSyncToggle" onchange="toggleAutoSync()" checked> авто</label>
         </div>
       </article>
     </section>
@@ -167,7 +168,7 @@
               <div class="card-title">Журнал вимірювань</div>
               <p class="muted">Редагування та видалення доступні для кожного запису.</p>
             </div>
-            <button class="primary" onclick="openBPModal()">➕ Додати тиск</button>
+            <div class="row wrap"><button class="primary" onclick="openBPModal()">➕ Додати тиск</button><button onclick="deleteSelectedBP()">🗑 Видалити вибрані</button></div>
           </div>
           <div id="entriesTable" class="table-wrap"></div>
         </div>
@@ -181,7 +182,7 @@
                 <div class="card-title">Прийом ліків</div>
                 <p class="muted">Фіксуйте препарат, дозу і контрольні заміри.</p>
               </div>
-              <button class="primary" onclick="openMedModal()">💊 Прийняв ліки</button>
+              <div class="row wrap"><button class="primary" onclick="openMedModal()">💊 Прийняв ліки</button><button onclick="deleteSelectedMeds()">🗑 Видалити вибрані</button></div>
             </div>
             <div id="medTable" class="table-wrap"></div>
           </article>
@@ -359,6 +360,26 @@
     </div>
   </div>
 
+
+
+  <!-- Weather Edit Modal -->
+  <div id="weatherEditModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-head"><h2>🌦 Редагувати погоду</h2><button onclick="closeModal('weatherEditModal')">✕</button></div>
+      <form class="form" onsubmit="saveWeatherEdit(event)">
+        <input type="hidden" id="weatherEditId"/>
+        <label>Дата і час <input type="datetime-local" id="weatherEditTime" required/></label>
+        <div class="form-grid">
+          <label>Температура °C <input type="number" step="0.1" id="weatherEditTemp"/></label>
+          <label>Атм. тиск гПа <input type="number" step="0.1" id="weatherEditPressure"/></label>
+          <label>Вологість % <input type="number" step="1" id="weatherEditHumidity"/></label>
+          <label>Вітер <input type="number" step="0.1" id="weatherEditWind"/></label>
+          <label>Опади <input type="number" step="0.1" id="weatherEditPrecip"/></label>
+        </div>
+        <div class="row"><button class="primary">Зберегти</button><button type="button" onclick="closeModal('weatherEditModal')">Скасувати</button></div>
+      </form>
+    </div>
+  </div>
 
   <!-- Cloud Modal -->
   <div id="cloudModal" class="modal">

@@ -1,0 +1,18 @@
+Виправлення Firebase apiKey
+
+Проблема була в firebase-cloud.js:
+було:
+AIzaSyBu1T70FbuvkgTEaumsLB9sd0uj3hND5Y
+
+має бути:
+AIzaSyBzulT70FbuvkgTEaumslB9sd0uj3hND5Y
+
+Що зробити:
+1. Відкрий GitHub repository health-radar.
+2. Відкрий файл firebase-cloud.js.
+3. Натисни Edit.
+4. Заміни весь файл на виправлений firebase-cloud.js з цього архіву.
+5. Commit changes.
+6. Почекай 1 хвилину.
+7. На сайті натисни Ctrl+F5.
+8. Натисни Google.
