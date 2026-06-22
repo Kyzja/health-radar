@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Мій тиск AI — Health Radar</title>
+  <link rel="manifest" href="manifest.json"/>
+  <meta name="theme-color" content="#0e1628"/>
+  <link rel="stylesheet" href="styles.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div>
+        <h1>🫀 Мій тиск AI</h1>
+        <p>Особистий медичний аналітик: тиск, пульс, ліки, погода, тригери</p>
+      </div>
+      <div class="top-actions">
+        <button class="ghost" onclick="openCloudPanel()">☁️ Хмара</button>
+        <button class="ghost" onclick="openModal('settingsModal')">⚙️ Налаштування</button>
+        <button class="primary" onclick="openModal('quickModal')">⚡ Швидкий запис</button>
+      </div>
+    </header>
+
+    <section class="grid dashboard">
+      <article class="card status-card">
+        <div class="card-title">Стан сьогодні</div>
+        <div id="dayBadge" class="day-badge neutral">—</div>
+        <div id="aiShort" class="muted">Додайте перші записи для аналізу.</div>
+      </article>
+
+      <article class="card">
+        <div class="card-title">Останній тиск</div>
+        <div class="big" id="lastBP">—/—</div>
+        <div class="muted" id="lastBPTime">Немає записів</div>
+      </article>
+
+      <article class="card">
+        <div class="card-title">Погода</div>
+        <div class="big" id="weatherNow">—</div>
+        <div class="muted" id="weatherMeta">Місто не вибрано</div>
+      </article>
+
+      <article class="card">
+        <div class="card-title">Атм. тиск</div>
+        <div class="big" id="atmPressure">—</div>
+        <div class="muted" id="atmDelta">Δ 2/6/12/24 год —</div>
+      </article>
+
+      <article class="card cloud-card">
+        <div class="card-title">☁️ Синхронізація</div>
+        <div id="cloudStatus" class="muted">Не виконано вхід</div>
+        <div class="row wrap cloud-actions-mini">
+          <button onclick="cloudSignIn()">Google</button>
+          <button onclick="cloudSaveNow()">Зберегти</button>
+        </div>
+      </article>
+    </section>
+
+    <nav class="tabs">
+      <button class="tab active" data-tab="main">📊 Аналітика</button>
+      <button class="tab" data-tab="correlations">🧩 Впливає на мене</button>
+      <button class="tab" data-tab="forecast">🔮 Прогноз</button>
+      <button class="tab" data-tab="neuro">👂 Неврологія</button>
+      <button class="tab" data-tab="entries">📝 Журнал</button>
+      <button class="tab" data-tab="meds">💊 Ліки</button>
+      <button class="tab" data-tab="weather">🌦 Погода</button>
+      <button class="tab" data-tab="calendar">📅 Календар</button>
+      <button class="tab" data-tab="reports">📄 PDF</button>
+    </nav>
+
+    <main>
+      <section id="tab-main" class="tab-panel active">
+        <div class="grid two">
+          <article class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">Графік тиску, пульсу і погоди</div>
+                <p class="muted">Можна накладати показники на один часовий ряд.</p>
+              </div>
+              <select id="chartRange" onchange="renderAll()">
+                <option value="7">7 днів</option>
+                <option value="30">30 днів</option>
+                <option value="9999">Весь час</option>
+              </select>
+            </div>
+            <canvas id="mainChart" height="130"></canvas>
+          </article>
+
+          <article class="card">
+            <div class="card-title">🧠 AI-висновок</div>
+            <div id="aiFull" class="ai-box">Поки недостатньо даних. Додайте записи тиску, ліків та подій.</div>
+          </article>
+        </div>
+
+        <div class="grid two">
+          <article class="card">
+            <div class="card-title">Персональні тригери</div>
+            <div id="triggerList" class="list"></div>
+          </article>
+          <article class="card">
+            <div class="card-title">Теплова карта по годинах</div>
+            <div id="hourHeatmap" class="heatmap"></div>
+          </article>
+        </div>
+      </section>
+
+
+      <section id="tab-correlations" class="tab-panel">
+        <div class="grid two">
+          <article class="card">
+            <div class="card-title">🧩 Кореляційний центр</div>
+            <p class="muted">Програма порівнює дні з певним фактором проти вашої середньої норми.</p>
+            <div id="correlationRanking" class="list"></div>
+          </article>
+          <article class="card">
+            <div class="card-title">Пояснення</div>
+            <div id="correlationExplanation" class="ai-box"></div>
+          </article>
+        </div>
+      </section>
+
+      <section id="tab-forecast" class="tab-panel">
+        <div class="grid two">
+          <article class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">🔮 Прогноз самопочуття на завтра</div>
+                <p class="muted">Оцінює ризик по прогнозу погоди та вашій історії.</p>
+              </div>
+              <button class="primary" onclick="fetchTomorrowForecast()">Оновити прогноз</button>
+            </div>
+            <div id="tomorrowForecast" class="ai-box">Натисніть “Оновити прогноз”.</div>
+          </article>
+          <article class="card">
+            <div class="card-title">Погодні ризики</div>
+            <div id="forecastFactors" class="list"></div>
+          </article>
+        </div>
+      </section>
+
+      <section id="tab-neuro" class="tab-panel">
+        <div class="grid two">
+          <article class="card">
+            <div class="card-title">👂 Неврологічний щоденник</div>
+            <p class="muted">Шум у вухах, головний біль, запаморочення, втома — усе з оцінкою 0–10.</p>
+            <div class="quick-grid">
+              <button onclick="quickEvent('tinnitus')">👂 Шум у вухах</button>
+              <button onclick="quickEvent('headache')">🤕 Головний біль</button>
+              <button onclick="quickEvent('dizziness')">😵 Запаморочення</button>
+              <button onclick="quickEvent('fatigue')">😴 Втома</button>
+            </div>
+            <div id="neuroTable" class="table-wrap"></div>
+          </article>
+          <article class="card">
+            <div class="card-title">AI по неврології</div>
+            <div id="neuroAI" class="ai-box"></div>
+          </article>
+        </div>
+      </section>
+
+      <section id="tab-entries" class="tab-panel">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Журнал вимірювань</div>
+              <p class="muted">Редагування та видалення доступні для кожного запису.</p>
+            </div>
+            <button class="primary" onclick="openBPModal()">➕ Додати тиск</button>
+          </div>
+          <div id="entriesTable" class="table-wrap"></div>
+        </div>
+      </section>
+
+      <section id="tab-meds" class="tab-panel">
+        <div class="grid two">
+          <article class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">Прийом ліків</div>
+                <p class="muted">Фіксуйте препарат, дозу і контрольні заміри.</p>
+              </div>
+              <button class="primary" onclick="openMedModal()">💊 Прийняв ліки</button>
+            </div>
+            <div id="medTable" class="table-wrap"></div>
+          </article>
+          <article class="card">
+            <div class="card-title">Ефективність ліків</div>
+            <div id="medAnalysis" class="list"></div>
+          </article>
+        </div>
+      </section>
+
+      <section id="tab-weather" class="tab-panel">
+        <div class="grid two">
+          <article class="card">
+            <div class="card-title">Місто та автопогода</div>
+            <div class="row">
+              <input id="cityInput" placeholder="Наприклад: Київ, Вишневе, Львів" oninput="searchCityDebounced()"/>
+              <button onclick="searchCity()">🔎</button>
+              <button onclick="useMyLocation()">📍</button>
+            </div>
+            <div id="citySuggestions" class="suggestions"></div>
+            <div class="settings-grid">
+              <label>Початок архіву <input type="date" id="weatherStart"/></label>
+              <label>Інтервал <select id="weatherInterval"><option value="2">2 години</option><option value="1">1 година</option><option value="3">3 години</option></select></label>
+            </div>
+            <div class="row wrap">
+              <button class="primary" onclick="fetchMissingWeather()">⬇️ Оновити пропущені дані</button>
+              <button onclick="recordCurrentWeather()">🌦 Записати зараз</button>
+              <button onclick="clearWeatherArchive()">🗑 Очистити архів</button>
+            </div>
+          </article>
+          <article class="card">
+            <div class="card-title">Архів погоди</div>
+            <div id="weatherTable" class="table-wrap compact"></div>
+          </article>
+        </div>
+      </section>
+
+      <section id="tab-calendar" class="tab-panel">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Календар здоров’я</div>
+              <p class="muted">Зелений — стабільно, жовтий — середньо, червоний — ризиково.</p>
+            </div>
+            <input type="month" id="calendarMonth" onchange="renderCalendar()"/>
+          </div>
+          <div id="calendarGrid" class="calendar"></div>
+        </div>
+      </section>
+
+      <section id="tab-reports" class="tab-panel">
+        <div class="card">
+          <div class="card-title">PDF-звіти</div>
+          <div class="settings-grid">
+            <label>Період
+              <select id="reportPeriod" onchange="toggleCustomReportDates()">
+                <option value="today">Сьогодні</option>
+                <option value="7">Останні 7 днів</option>
+                <option value="30" selected>Останні 30 днів</option>
+                <option value="all">Весь час</option>
+                <option value="custom">Власний період</option>
+              </select>
+            </label>
+            <label class="customReport">З <input type="date" id="reportFrom"/></label>
+            <label class="customReport">По <input type="date" id="reportTo"/></label>
+            <label>Тип звіту
+              <select id="reportType">
+                <option value="doctor">Короткий для лікаря</option>
+                <option value="full">Повний звіт</option>
+                <option value="weather">Тільки погода</option>
+                <option value="journal">Тільки журнал</option>
+              </select>
+            </label>
+          </div>
+          <div class="row wrap">
+            <button class="primary" onclick="generatePDFReport()">📄 Сформувати PDF</button>
+            <button onclick="backupData()">💾 Резервна копія</button>
+            <label class="filebtn">📥 Імпорт <input type="file" accept="application/json" onchange="importData(event)" hidden/></label>
+          </div>
+          <p class="muted">PDF формується через вікно друку браузера. Оберіть “Зберегти як PDF”.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Quick Modal -->
+  <div id="quickModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-head"><h2>⚡ Швидкий запис</h2><button onclick="closeModal('quickModal')">✕</button></div>
+      <div class="quick-grid">
+        <button onclick="quickEvent('stress')">😡 Стрес</button>
+        <button onclick="quickEvent('coffee')">☕ Кава</button>
+        <button onclick="quickEvent('alcohol')">🍺 Алкоголь</button>
+        <button onclick="quickEvent('activity')">🏃 Навантаження</button>
+        <button onclick="quickEvent('sleep')">😴 Сон</button>
+        <button onclick="quickEvent('headache')">🤕 Біль</button>
+        <button onclick="quickEvent('tinnitus')">👂 Шум</button>
+        <button onclick="quickEvent('dizziness')">😵 Запаморочення</button>
+        <button onclick="quickEvent('fatigue')">😴 Втома</button>
+        <button onclick="openBPModal()">🩺 Тиск</button>
+      </div>
+      <form id="quickForm" class="form hidden" onsubmit="saveQuickEvent(event)">
+        <input type="hidden" id="quickId"/>
+        <input type="hidden" id="quickType"/>
+        <label>Дата і час <input type="datetime-local" id="quickDateTime"/></label>
+        <label>Значення <input type="number" step="0.1" id="quickValue"/></label>
+        <label>Примітка <textarea id="quickNote" rows="2"></textarea></label>
+        <div class="row"><button class="primary">Зберегти</button><button type="button" onclick="hideQuickForm()">Скасувати</button></div>
+      </form>
+      <h3>Останні події</h3>
+      <div id="quickEventsList" class="list"></div>
+    </div>
+  </div>
+
+  <!-- BP Modal -->
+  <div id="bpModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-head"><h2>🩺 Запис тиску</h2><button onclick="closeModal('bpModal')">✕</button></div>
+      <form class="form" onsubmit="saveBP(event)">
+        <input type="hidden" id="bpId"/>
+        <label>Дата і час <input type="datetime-local" id="bpDateTime" required/></label>
+        <div class="form-grid">
+          <label>Верхній <input type="number" id="sys" required/></label>
+          <label>Нижній <input type="number" id="dia" required/></label>
+          <label>Пульс <input type="number" id="pulse" required/></label>
+        </div>
+        <label>Самопочуття
+          <select id="wellbeing">
+            <option value="5">5 — нормально</option>
+            <option value="1">1 — дуже погано</option>
+            <option value="2">2</option><option value="3">3</option><option value="4">4</option>
+            <option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10 — добре</option>
+          </select>
+        </label>
+        <label>Примітка <textarea id="bpNote" rows="3"></textarea></label>
+        <div class="row"><button class="primary">Зберегти</button><button type="button" onclick="closeModal('bpModal')">Скасувати</button></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Med Modal -->
+  <div id="medModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-head"><h2>💊 Прийом ліків</h2><button onclick="closeModal('medModal')">✕</button></div>
+      <form class="form" onsubmit="saveMed(event)">
+        <input type="hidden" id="medId"/>
+        <label>Дата і час <input type="datetime-local" id="medDateTime" required/></label>
+        <label>Назва препарату <input id="medName" placeholder="Каптоприл, Ніфедипін..." required/></label>
+        <label>Доза <input id="medDose" placeholder="25 мг"/></label>
+        <label>Примітка <textarea id="medNote" rows="2"></textarea></label>
+        <div class="row"><button class="primary">Зберегти</button><button type="button" onclick="closeModal('medModal')">Скасувати</button></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settingsModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-head"><h2>⚙️ Налаштування</h2><button onclick="closeModal('settingsModal')">✕</button></div>
+      <div class="settings-grid">
+        <label>Високий верхній АТ <input type="number" id="limitSys"/></label>
+        <label>Високий нижній АТ <input type="number" id="limitDia"/></label>
+        <label>Високий пульс <input type="number" id="limitPulse"/></label>
+        <label>Початок погоди <input type="date" id="settingsWeatherStart"/></label>
+      </div>
+      <hr class="sep"/>
+      <h3>☁️ Firebase / хмара</h3>
+      <p class="muted">Поки працює локальне збереження. Для Firebase вставте config JSON з Firebase Console. Після цього можна буде розвивати повну синхронізацію.</p>
+      <label>Firebase config JSON <textarea id="firebaseConfig" rows="5" placeholder='{"apiKey":"...","authDomain":"...","projectId":"..."}'></textarea></label>
+      <div class="row wrap">
+        <button onclick="saveFirebaseConfig()" type="button">💾 Зберегти config</button>
+        <button onclick="exportForCloud()" type="button">☁️ Експорт для хмари</button>
+      </div>
+      <button class="primary" onclick="saveSettings()">Зберегти</button>
+    </div>
+  </div>
+
+
+  <!-- Cloud Modal -->
+  <div id="cloudModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-head"><h2>☁️ Health Radar Cloud</h2><button onclick="closeModal('cloudModal')">✕</button></div>
+      <div class="cloud-profile">
+        <div id="cloudUserAvatar" class="avatar">☁️</div>
+        <div>
+          <div id="cloudUserName" class="card-title">Вхід не виконано</div>
+          <div id="cloudUserEmail" class="muted">Увійдіть через Google, щоб синхронізувати телефон і ПК.</div>
+        </div>
+      </div>
+
+      <div class="grid two">
+        <article class="card inner-card">
+          <div class="card-title">Стан хмари</div>
+          <div id="cloudDetails" class="ai-box">Очікує входу.</div>
+        </article>
+        <article class="card inner-card">
+          <div class="card-title">Дії</div>
+          <div class="list">
+            <button class="primary" onclick="cloudSignIn()">🔐 Увійти через Google</button>
+            <button onclick="cloudSaveNow()">⬆️ Зберегти локальні дані в хмару</button>
+            <button onclick="cloudLoadNow()">⬇️ Завантажити дані з хмари</button>
+            <button onclick="cloudMergeNow()">🔄 Об’єднати локальні + хмарні</button>
+            <button onclick="cloudSignOut()">🚪 Вийти</button>
+          </div>
+        </article>
+      </div>
+
+      <p class="muted">
+        Дані зберігаються у Firestore в документі вашого Google-акаунта.
+        Для безпеки після перевірки роботи змініть Firestore Rules на правила доступу тільки для свого UID.
+      </p>
+    </div>
+  </div>
+
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <script src="app.js"></script>
+  <script src="firebase-cloud.js"></script>
+  <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{});}</script>
+</body>
+</html>
