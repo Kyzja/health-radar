@@ -13,7 +13,7 @@
   <div class="app">
     <header class="topbar">
       <div>
-        <h1>🫀 Мій тиск AI</h1>
+        <h1>🫀 Мій тиск AI <span class="version-badge">v1.5.8</span></h1>
         <p>Особистий медичний аналітик: тиск, пульс, ліки, погода, тригери</p>
       </div>
       <div class="top-actions">
@@ -147,10 +147,10 @@
             <div class="card-title">👂 Неврологічний щоденник</div>
             <p class="muted">Шум у вухах, головний біль, запаморочення, втома — усе з оцінкою 0–10.</p>
             <div class="quick-grid">
-              <button onclick="quickEvent('tinnitus')">👂 Шум у вухах</button>
-              <button onclick="quickEvent('headache')">🤕 Головний біль</button>
-              <button onclick="quickEvent('dizziness')">😵 Запаморочення</button>
-              <button onclick="quickEvent('fatigue')">😴 Втома</button>
+              <button onclick="HR_FORCE_QUICK('tinnitus')">👂 Шум у вухах</button>
+              <button onclick="HR_FORCE_QUICK('headache')">🤕 Головний біль</button>
+              <button onclick="HR_FORCE_QUICK('dizziness')">😵 Запаморочення</button>
+              <button onclick="HR_FORCE_QUICK('fatigue')">😴 Втома</button>
             </div>
             <div id="neuroTable" class="table-wrap"></div>
           </article>
@@ -272,20 +272,20 @@
   <!-- Quick Modal -->
   <div id="quickModal" class="modal">
     <div class="modal-content">
-      <div class="modal-head"><h2>⚡ Швидкий запис</h2><button onclick="closeModal('quickModal')">✕</button></div>
+      <div class="modal-head"><h2>⚡ Швидкий запис</h2><button type="button" id="quickModalCloseBtn" aria-label="Закрити" onclick="HR_FORCE_CLOSE_QUICK_MODAL(event)">✕</button></div>
       <div class="quick-grid">
-        <button onclick="quickEvent('stress')">😡 Стрес</button>
-        <button onclick="quickEvent('coffee')">☕ Кава</button>
-        <button onclick="quickEvent('alcohol')">🍺 Алкоголь</button>
-        <button onclick="quickEvent('activity')">🏃 Навантаження</button>
-        <button onclick="quickEvent('sleep')">😴 Сон</button>
-        <button onclick="quickEvent('headache')">🤕 Біль</button>
-        <button onclick="quickEvent('tinnitus')">👂 Шум</button>
-        <button onclick="quickEvent('dizziness')">😵 Запаморочення</button>
-        <button onclick="quickEvent('fatigue')">😴 Втома</button>
+        <button onclick="HR_FORCE_QUICK('stress')">😡 Стрес</button>
+        <button onclick="HR_FORCE_QUICK('coffee')">☕ Кава</button>
+        <button onclick="HR_FORCE_QUICK('alcohol')">🍺 Алкоголь</button>
+        <button onclick="HR_FORCE_QUICK('activity')">🏃 Навантаження</button>
+        <button onclick="HR_FORCE_QUICK('sleep')">😴 Сон</button>
+        <button onclick="HR_FORCE_QUICK('headache')">🤕 Біль</button>
+        <button onclick="HR_FORCE_QUICK('tinnitus')">👂 Шум</button>
+        <button onclick="HR_FORCE_QUICK('dizziness')">😵 Запаморочення</button>
+        <button onclick="HR_FORCE_QUICK('fatigue')">😴 Втома</button>
         <button onclick="openBPModal()">🩺 Тиск</button>
       </div>
-      <form id="quickForm" class="form hidden" onsubmit="saveQuickEvent(event)">
+      <form id="quickForm" class="form hidden" onsubmit="HR_SAVE_QUICK(event)">
         <input type="hidden" id="quickId"/>
         <input type="hidden" id="quickType"/>
         <div class="quick-form-head">
@@ -297,7 +297,7 @@
         <label>Дата і час <input type="datetime-local" id="quickDateTime"/></label>
         <div id="quickDynamicFields"></div>
         <label>Примітка <textarea id="quickNote" rows="2" placeholder="необов’язково"></textarea></label>
-        <div class="row"><button class="primary">Зберегти</button><button type="button" onclick="hideQuickForm()">Скасувати</button></div>
+        <div class="row"><button class="primary">Зберегти</button><button type="button" onclick="HR_HIDE_QUICK_FORM()">Скасувати</button></div>
       </form>
       <h3>Останні події</h3>
       <div id="quickEventsList" class="list"></div>
@@ -429,7 +429,10 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <script src="app.js"></script>
+  <script src="quick-fix.js"></script>
   <script src="firebase-cloud.js"></script>
   <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{});}</script>
 </body>
 </html>
+
+<!-- QUICK_BUTTONS_FIXED_155 -->

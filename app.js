@@ -1159,3 +1159,255 @@ renderQuickEvents = function(){
   list.innerHTML =
     `<div class="row wrap" style="margin-bottom:10px"><button onclick="deleteSelectedEvents()">🗑 Видалити вибрані</button><span class="badge-mini">Подій: ${state.events.length}</span></div>` + (items || '<div class="muted">Подій немає.</div>');
 };
+
+
+/* ===== Health Radar 1.5.2: quick buttons open modal fix ===== */
+
+/*
+  Проблема: кнопки у вкладці “Неврологія” викликали quickEvent(),
+  але форма знаходиться всередині модального вікна quickModal.
+  Тому форма створювалась, але користувач її не бачив.
+*/
+
+const __quickEventBefore152 = quickEvent;
+quickEvent = function(type){
+  // Тиск відкриває окрему форму АТ
+  if(type === 'bp' || type === 'pressure'){
+    closeModal('quickModal');
+    openBPModal();
+    return;
+  }
+
+  // Завжди відкриваємо модальне вікно швидкого запису,
+  // незалежно від того, звідки натиснута кнопка.
+  const modal = document.getElementById('quickModal');
+  if(modal && !modal.classList.contains('show')){
+    openModal('quickModal');
+  }
+
+  return __quickEventBefore152(type);
+};
+
+/* Додаємо окремі прямі кнопки у неврології, щоб вони теж відкривали форму */
+function openNeuroQuick(type){
+  openModal('quickModal');
+  quickEvent(type);
+}
+
+/* Якщо на сторінці є кнопки неврології, переприв'язуємо їх безпечніше */
+function patchNeuroButtons(){
+  document.querySelectorAll('#tab-neuro button').forEach(btn => {
+    const text = btn.textContent || '';
+    if(text.includes('Шум')) btn.onclick = () => openNeuroQuick('tinnitus');
+    if(text.includes('Головний')) btn.onclick = () => openNeuroQuick('headache');
+    if(text.includes('Запамороч')) btn.onclick = () => openNeuroQuick('dizziness');
+    if(text.includes('Втом')) btn.onclick = () => openNeuroQuick('fatigue');
+  });
+}
+
+window.addEventListener('load', patchNeuroButtons);
+setTimeout(patchNeuroButtons, 800);
+
+
+/* ===== Health Radar 1.5.3 HARD FIX: quick buttons ===== */
+/* This block does not depend on old quickEvent handlers. It captures clicks directly. */
+
+const HR_QUICK_CONFIG = {
+  stress: {title:'😡 Стрес', hint:'Рівень стресу 0–10', unit:'рівень', def:1, btn:[0,1,2,3,4,5,6,7,8,9,10]},
+  coffee: {title:'☕ Кава', hint:'Скільки чашок кави сьогодні?', unit:'чашок', def:1, btn:[1,2,3,4,5]},
+  alcohol: {title:'🍺 Алкоголь', hint:'Кількість порцій алкоголю', unit:'порцій', def:1, btn:[0,1,2,3,4,5], extra:`<label>Тип алкоголю<select id="quickExtra"><option value="">не вказано</option><option value="пиво">🍺 Пиво</option><option value="вино">🍷 Вино</option><option value="міцний">🥃 Міцний</option></select></label>`},
+  activity: {title:'🏃 Навантаження', hint:'Тип і тривалість навантаження', unit:'хв', def:30, btn:[10,20,30,45,60,90,120], extra:`<label>Тип активності<select id="quickExtra"><option value="ходьба">🚶 Ходьба</option><option value="біг">🏃 Біг</option><option value="тренування">💪 Тренування</option><option value="робота">🛠 Робота/навантаження</option></select></label>`},
+  sleep: {title:'😴 Сон', hint:'Години сну та якість', unit:'год', def:7, btn:[4,5,6,7,8,9,10], extra:`<label>Якість сну<select id="quickExtra"><option value="1">1 — дуже погано</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5" selected>5 — нормально</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10 — добре</option></select></label>`},
+  headache: {title:'🤕 Головний біль', hint:'Оцініть біль 0–10', unit:'рівень', def:1, btn:[0,1,2,3,4,5,6,7,8,9,10]},
+  tinnitus: {title:'👂 Шум у вухах', hint:'Оцініть шум 0–10', unit:'рівень', def:1, btn:[0,1,2,3,4,5,6,7,8,9,10]},
+  dizziness: {title:'😵 Запаморочення', hint:'Оцініть запаморочення 0–10', unit:'рівень', def:1, btn:[0,1,2,3,4,5,6,7,8,9,10]},
+  fatigue: {title:'😴 Втома', hint:'Оцініть втому 0–10', unit:'рівень', def:1, btn:[0,1,2,3,4,5,6,7,8,9,10]}
+};
+
+function hrQuickTypeFromText(txt){
+  txt = (txt || '').toLowerCase();
+  if(txt.includes('стрес')) return 'stress';
+  if(txt.includes('кава')) return 'coffee';
+  if(txt.includes('алког')) return 'alcohol';
+  if(txt.includes('навантаж')) return 'activity';
+  if(txt.includes('сон')) return 'sleep';
+  if(txt.includes('голов') || txt.includes('біль')) return 'headache';
+  if(txt.includes('шум')) return 'tinnitus';
+  if(txt.includes('запамор')) return 'dizziness';
+  if(txt.includes('втом')) return 'fatigue';
+  if(txt.includes('тиск')) return 'bp';
+  return null;
+}
+
+function hrShowModal(id){
+  const m = document.getElementById(id);
+  if(!m) return;
+  m.classList.add('show');
+  m.style.display = 'flex';
+}
+
+function hrHideModal(id){
+  const m = document.getElementById(id);
+  if(!m) return;
+  m.classList.remove('show');
+  m.style.display = '';
+}
+
+function hrOpenQuick(type, existing=null){
+  if(type === 'bp'){
+    hrHideModal('quickModal');
+    if(typeof openBPModal === 'function') openBPModal();
+    return;
+  }
+
+  const cfg = HR_QUICK_CONFIG[type] || HR_QUICK_CONFIG.stress;
+  hrShowModal('quickModal');
+
+  const form = document.getElementById('quickForm');
+  if(!form) {
+    alert('Не знайдено quickForm у index.html');
+    return;
+  }
+
+  form.classList.remove('hidden');
+
+  const idEl = document.getElementById('quickId');
+  const typeEl = document.getElementById('quickType');
+  const dtEl = document.getElementById('quickDateTime');
+  const noteEl = document.getElementById('quickNote');
+  const titleEl = document.getElementById('quickFormTitle');
+  const hintEl = document.getElementById('quickFormHint');
+
+  if(idEl) idEl.value = existing?.id || '';
+  if(typeEl) typeEl.value = type;
+  if(dtEl) dtEl.value = existing?.time ? nowLocalInput(new Date(existing.time)) : nowLocalInput();
+  if(noteEl) noteEl.value = existing?.note || '';
+  if(titleEl) titleEl.textContent = cfg.title;
+  if(hintEl) hintEl.textContent = cfg.hint;
+
+  hrRenderQuickFields(type, existing?.value ?? cfg.def, existing?.extra || '');
+}
+
+function hrRenderQuickFields(type, value, extraValue=''){
+  const cfg = HR_QUICK_CONFIG[type] || HR_QUICK_CONFIG.stress;
+  const box = document.getElementById('quickDynamicFields');
+  if(!box) return;
+
+  const buttons = (cfg.btn || []).map(v =>
+    `<button type="button" class="${Number(v)===Number(value)?'active':''}" data-hr-set-value="${v}">${v}</button>`
+  ).join('');
+
+  box.innerHTML = `
+    <label>Значення (${cfg.unit})
+      <input type="number" step="0.1" id="quickValue" value="${value}">
+    </label>
+    <div class="quick-options">${buttons}</div>
+    <div class="quick-fields-grid">${cfg.extra || ''}</div>
+  `;
+
+  const extra = document.getElementById('quickExtra');
+  if(extra && extraValue) extra.value = extraValue;
+}
+
+/* Capture clicks before old inline onclick can break anything */
+document.addEventListener('click', function(e){
+  const btn = e.target.closest('button');
+  if(!btn) return;
+
+  const onclick = btn.getAttribute('onclick') || '';
+  const txt = btn.textContent || '';
+  const isQuick = onclick.includes('quickEvent') || btn.closest('#tab-neuro') || btn.closest('#quickModal .quick-grid');
+
+  if(!isQuick) return;
+
+  const type = hrQuickTypeFromText(txt) || (onclick.match(/quickEvent\('([^']+)'\)/)?.[1]);
+  if(!type) return;
+
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  hrOpenQuick(type);
+}, true);
+
+/* Value buttons inside dynamic quick form */
+document.addEventListener('click', function(e){
+  const b = e.target.closest('[data-hr-set-value]');
+  if(!b) return;
+  e.preventDefault();
+  const v = b.getAttribute('data-hr-set-value');
+  const input = document.getElementById('quickValue');
+  if(input) input.value = v;
+  document.querySelectorAll('.quick-options button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+}, true);
+
+/* Save quick form reliably */
+document.addEventListener('submit', function(e){
+  if(e.target?.id !== 'quickForm') return;
+  e.preventDefault();
+
+  const id = document.getElementById('quickId')?.value || uid();
+  const type = document.getElementById('quickType')?.value || 'stress';
+  const dt = document.getElementById('quickDateTime')?.value || nowLocalInput();
+  const val = +(document.getElementById('quickValue')?.value || 0);
+  const extra = document.getElementById('quickExtra')?.value || '';
+  const note = document.getElementById('quickNote')?.value?.trim() || '';
+
+  const rec = { id, type, time:new Date(dt).toISOString(), value:val, extra, note };
+  const i = state.events.findIndex(x=>x.id===id);
+  if(i>=0) state.events[i]=rec; else state.events.push(rec);
+
+  const form = document.getElementById('quickForm');
+  if(form) form.classList.add('hidden');
+
+  if(typeof renderAll === 'function') renderAll();
+  if(typeof scheduleCloudSave === 'function') scheduleCloudSave();
+}, true);
+
+/* Override edit event too */
+editEvent = function(id){
+  const r = state.events.find(x=>x.id===id);
+  if(!r) return;
+  hrOpenQuick(r.type, r);
+};
+
+/* Make close button reset display */
+const __oldCloseModal153 = closeModal;
+closeModal = function(id){
+  __oldCloseModal153(id);
+  const m = document.getElementById(id);
+  if(m) m.style.display = '';
+};
+
+
+/* ===== Health Radar 1.5.7: simple close fix, no click interception ===== */
+window.HR_CLOSE_QUICK = function(){
+  const m = document.getElementById('quickModal');
+  if(m){
+    m.classList.remove('show');
+    m.style.display = 'none';
+  }
+  const f = document.getElementById('quickForm');
+  if(f) f.classList.add('hidden');
+};
+
+/* Override closeModal only for quickModal, leave all buttons intact */
+const __oldCloseModal157 = window.closeModal;
+window.closeModal = function(id){
+  if(id === 'quickModal'){
+    HR_CLOSE_QUICK();
+    return;
+  }
+  if(typeof __oldCloseModal157 === 'function') return __oldCloseModal157(id);
+  const m = document.getElementById(id);
+  if(m) m.classList.remove('show');
+};
+
+/* Esc closes quick modal */
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape') HR_CLOSE_QUICK();
+});
+
+/* Clicking backdrop closes only if the click is exactly on the backdrop */
+document.addEventListener('click', function(e){
+  if(e.target && e.target.id === 'quickModal') HR_CLOSE_QUICK();
+});
