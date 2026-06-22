@@ -120,3 +120,17 @@ label{display:flex;flex-direction:column;gap:6px;color:#dbe9ff;font-weight:650}i
 .hotfix-note{display:block;color:#93c5fd;font-size:12px;margin-top:4px}
 .future-weather{opacity:.58}
 .future-weather td{font-style:italic}
+
+.weather-card-source{
+  display:block;
+  color:#93c5fd;
+  font-size:12px;
+  margin-top:4px;
+  line-height:1.25;
+}
+.weather-card-warning{
+  display:block;
+  color:#fbbf24;
+  font-size:12px;
+  margin-top:4px;
+}
