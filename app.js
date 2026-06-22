@@ -828,3 +828,99 @@ function startWeatherAutoRecorder(){
   setInterval(()=>fetchMissingWeather(true), 30*60*1000);
 }
 window.addEventListener('load', startWeatherAutoRecorder);
+
+
+/* ===== Health Radar 1.4: current-time weather fix ===== */
+
+/* Беремо не останній запис дня, а найближчий до поточного часу без майбутнього */
+function currentArchiveWeather(){
+  const now = new Date();
+  const items = [...(state.weather || [])]
+    .filter(w => w && w.time && new Date(w.time) <= now)
+    .sort((a,b) => new Date(b.time) - new Date(a.time));
+  return items[0] || null;
+}
+
+/* Найближчий запис взагалі, якщо треба для fallback */
+function nearestArchiveWeatherToNow(){
+  const now = new Date();
+  let best = null;
+  let bestDiff = Infinity;
+  (state.weather || []).forEach(w => {
+    if(!w || !w.time) return;
+    const diff = Math.abs(new Date(w.time) - now);
+    if(diff < bestDiff){
+      best = w;
+      bestDiff = diff;
+    }
+  });
+  return best;
+}
+
+/* Переписуємо dashboard: картка Погода показує актуальний час, а не вечірній прогноз */
+const __oldRenderDashboardCurrentWeatherFix = renderDashboard;
+renderDashboard = function(){
+  __oldRenderDashboardCurrentWeatherFix();
+
+  const current = currentArchiveWeather() || nearestArchiveWeatherToNow();
+  if(current){
+    const weatherNow = document.getElementById('weatherNow');
+    const weatherMeta = document.getElementById('weatherMeta');
+    const atmPressure = document.getElementById('atmPressure');
+
+    if(weatherNow) weatherNow.textContent = `${Math.round(current.temp)}°C`;
+
+    if(weatherMeta) {
+      weatherMeta.innerHTML =
+        `${state.city?.name || ''} · вологість ${current.humidity}% · вітер ${current.wind} м/с` +
+        `<span class="weather-source-note">поточний архівний запис: ${fmt.format(new Date(current.time))}</span>`;
+    }
+
+    if(atmPressure) atmPressure.textContent = `${Number(current.pressure).toFixed(1)} гПа`;
+  }
+
+  if(typeof renderWeatherAutoStatus === 'function') renderWeatherAutoStatus();
+};
+
+/* Таблиця архіву: майбутні години показуємо окремо як прогноз, але зверху поточний/минулий час */
+const __oldRenderWeatherCurrentFix = renderWeather;
+renderWeather = function(){
+  const now = new Date();
+
+  const past = [...(state.weather || [])]
+    .filter(w => new Date(w.time) <= now)
+    .sort((a,b)=>new Date(b.time)-new Date(a.time));
+
+  const future = [...(state.weather || [])]
+    .filter(w => new Date(w.time) > now)
+    .sort((a,b)=>new Date(a.time)-new Date(b.time));
+
+  const ordered = [...past, ...future];
+
+  const rows = ordered.slice(0,1000).map(w=>{
+    const isFuture = new Date(w.time) > now;
+    return `
+    <tr ${isFuture ? 'class="future-weather"' : ''}>
+      <td class="select-col"><input class="weather-check" type="checkbox" value="${w.id}"></td>
+      <td>${fmt.format(new Date(w.time))} ${isFuture ? '<span class="badge-mini">прогноз</span>' : ''}</td>
+      <td>${w.temp==null?'—':Number(w.temp).toFixed(1)+'°'}</td>
+      <td>${w.pressure==null?'—':Number(w.pressure).toFixed(1)}</td>
+      <td>${w.humidity??'—'}%</td>
+      <td>${w.wind??'—'}</td>
+      <td>${w.precip??'—'}</td>
+      <td class="actions"><button onclick="editWeather('${w.id}')">✏️</button><button class="danger" onclick="delWeather('${w.id}')">🗑</button></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('weatherTable').innerHTML =
+    `<div class="row wrap" style="margin-bottom:10px">
+      <button onclick="deleteSelectedWeather()">🗑 Видалити вибрані</button>
+      <label class="mini-check"><input type="checkbox" onchange="toggleAll('weather', this.checked)"> вибрати всі</label>
+      <span class="badge-mini">Архів: ${past.length}</span>
+      <span class="badge-mini">Прогноз: ${future.length}</span>
+    </div>
+    <table>
+      <thead><tr><th></th><th>Дата</th><th>Темп</th><th>Тиск гПа</th><th>Вологість</th><th>Вітер</th><th>Опади</th><th>Дії</th></tr></thead>
+      <tbody>${rows || '<tr><td colspan=8>Архів порожній</td></tr>'}</tbody>
+    </table>`;
+};

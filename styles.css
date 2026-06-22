@@ -65,3 +65,6 @@ label{display:flex;flex-direction:column;gap:6px;color:#dbe9ff;font-weight:650}i
 
 .weather-status{margin:10px 0;padding:10px 12px;border:1px solid var(--border);border-radius:14px;background:rgba(96,165,250,.08);color:#dbe9ff;font-size:13px;line-height:1.45}
 .weather-source-note{display:block;color:var(--muted);font-size:12px;margin-top:4px}
+
+.future-weather{opacity:.58}
+.future-weather td{font-style:italic}
