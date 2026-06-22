@@ -924,3 +924,238 @@ renderWeather = function(){
       <tbody>${rows || '<tr><td colspan=8>Архів порожній</td></tr>'}</tbody>
     </table>`;
 };
+
+
+/* ===== Health Radar 1.5: contextual quick dropdowns/forms ===== */
+
+const quickPresets = {
+  stress: {
+    title:'😡 Стрес',
+    hint:'Оцініть рівень стресу від 0 до 10.',
+    unit:'рівень',
+    defaultValue:1,
+    buttons:[0,1,2,3,4,5,6,7,8,9,10],
+    extra:''
+  },
+  coffee: {
+    title:'☕ Кава',
+    hint:'Скільки чашок кави сьогодні?',
+    unit:'чашок',
+    defaultValue:1,
+    buttons:[1,2,3,4,5],
+    extra:''
+  },
+  alcohol: {
+    title:'🍺 Алкоголь',
+    hint:'Вкажіть кількість порцій алкоголю.',
+    unit:'порцій',
+    defaultValue:1,
+    buttons:[0,1,2,3,4,5],
+    extra:`<label>Тип алкоголю
+      <select id="quickExtra">
+        <option value="">не вказано</option>
+        <option value="пиво">🍺 Пиво</option>
+        <option value="вино">🍷 Вино</option>
+        <option value="міцний">🥃 Міцний</option>
+      </select>
+    </label>`
+  },
+  activity: {
+    title:'🏃 Навантаження',
+    hint:'Оберіть тип активності та тривалість у хвилинах.',
+    unit:'хв',
+    defaultValue:30,
+    buttons:[10,20,30,45,60,90,120],
+    extra:`<label>Тип активності
+      <select id="quickExtra">
+        <option value="ходьба">🚶 Ходьба</option>
+        <option value="біг">🏃 Біг</option>
+        <option value="тренування">💪 Тренування</option>
+        <option value="робота">🛠 Робота/навантаження</option>
+      </select>
+    </label>`
+  },
+  sleep: {
+    title:'😴 Сон',
+    hint:'Вкажіть години сну та якість.',
+    unit:'год',
+    defaultValue:7,
+    buttons:[4,5,6,7,8,9,10],
+    extra:`<label>Якість сну
+      <select id="quickExtra">
+        <option value="1">1 — дуже погано</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5" selected>5 — нормально</option>
+        <option value="6">6</option>
+        <option value="7">7</option>
+        <option value="8">8</option>
+        <option value="9">9</option>
+        <option value="10">10 — добре</option>
+      </select>
+    </label>`
+  },
+  headache: {
+    title:'🤕 Головний біль',
+    hint:'Оцініть біль від 0 до 10.',
+    unit:'рівень',
+    defaultValue:1,
+    buttons:[0,1,2,3,4,5,6,7,8,9,10],
+    extra:''
+  },
+  tinnitus: {
+    title:'👂 Шум у вухах',
+    hint:'Оцініть шум у вухах від 0 до 10.',
+    unit:'рівень',
+    defaultValue:1,
+    buttons:[0,1,2,3,4,5,6,7,8,9,10],
+    extra:''
+  },
+  dizziness: {
+    title:'😵 Запаморочення',
+    hint:'Оцініть запаморочення від 0 до 10.',
+    unit:'рівень',
+    defaultValue:1,
+    buttons:[0,1,2,3,4,5,6,7,8,9,10],
+    extra:''
+  },
+  fatigue: {
+    title:'😴 Втома',
+    hint:'Оцініть втому від 0 до 10.',
+    unit:'рівень',
+    defaultValue:1,
+    buttons:[0,1,2,3,4,5,6,7,8,9,10],
+    extra:''
+  }
+};
+
+function quickEvent(type){
+  if(type === 'bp' || type === 'pressure'){
+    closeModal('quickModal');
+    openBPModal();
+    return;
+  }
+
+  const cfg = quickPresets[type] || {
+    title: quickLabels[type] || 'Швидка подія',
+    hint: 'Вкажіть значення.',
+    unit: 'значення',
+    defaultValue: 1,
+    buttons: [0,1,2,3,4,5,6,7,8,9,10],
+    extra:''
+  };
+
+  document.getElementById('quickForm').classList.remove('hidden');
+  document.getElementById('quickId').value='';
+  document.getElementById('quickType').value=type;
+  document.getElementById('quickDateTime').value=nowLocalInput();
+  document.getElementById('quickNote').value='';
+
+  const title = document.getElementById('quickFormTitle');
+  const hint = document.getElementById('quickFormHint');
+  if(title) title.textContent = cfg.title;
+  if(hint) hint.textContent = cfg.hint;
+
+  renderQuickDynamicFields(type, cfg.defaultValue);
+}
+
+function renderQuickDynamicFields(type, value){
+  const cfg = quickPresets[type] || {};
+  const box = document.getElementById('quickDynamicFields');
+  if(!box) return;
+
+  const buttons = (cfg.buttons || []).map(v =>
+    `<button type="button" class="${Number(v)===Number(value)?'active':''}" onclick="setQuickValue(${v})">${v}</button>`
+  ).join('');
+
+  box.innerHTML = `
+    <label>Значення (${cfg.unit || 'значення'})
+      <input type="number" step="0.1" id="quickValue" value="${value}">
+    </label>
+    <div class="quick-options">${buttons}</div>
+    <div class="quick-fields-grid">${cfg.extra || ''}</div>
+  `;
+}
+
+function setQuickValue(v){
+  const input = document.getElementById('quickValue');
+  if(input) input.value = v;
+  const type = document.getElementById('quickType')?.value;
+  const cfg = quickPresets[type] || {};
+  const box = document.getElementById('quickDynamicFields');
+  if(box){
+    const extraValue = document.getElementById('quickExtra')?.value;
+    renderQuickDynamicFields(type, v);
+    if(extraValue !== undefined && document.getElementById('quickExtra')) {
+      document.getElementById('quickExtra').value = extraValue;
+    }
+  }
+}
+
+/* Edit existing event now opens the correct contextual form */
+function editEvent(id){
+  const r=state.events.find(x=>x.id===id); if(!r) return;
+  openModal('quickModal');
+
+  const type = r.type;
+  const cfg = quickPresets[type] || {
+    title: quickLabels[type] || 'Швидка подія',
+    hint: 'Вкажіть значення.',
+    unit: 'значення',
+    defaultValue: r.value || 1,
+    buttons: [0,1,2,3,4,5,6,7,8,9,10],
+    extra:''
+  };
+
+  document.getElementById('quickForm').classList.remove('hidden');
+  document.getElementById('quickId').value=r.id;
+  document.getElementById('quickType').value=type;
+  document.getElementById('quickDateTime').value=nowLocalInput(new Date(r.time));
+  document.getElementById('quickNote').value=r.note||'';
+
+  const title = document.getElementById('quickFormTitle');
+  const hint = document.getElementById('quickFormHint');
+  if(title) title.textContent = cfg.title;
+  if(hint) hint.textContent = cfg.hint;
+
+  renderQuickDynamicFields(type, r.value ?? cfg.defaultValue ?? 1);
+
+  if(r.extra && document.getElementById('quickExtra')){
+    document.getElementById('quickExtra').value = r.extra;
+  }
+}
+
+/* Save extra field too */
+function saveQuickEvent(e){
+  e.preventDefault();
+  const id=document.getElementById('quickId').value||uid();
+  const extraEl = document.getElementById('quickExtra');
+  const rec={
+    id,
+    type:document.getElementById('quickType').value,
+    time:new Date(document.getElementById('quickDateTime').value).toISOString(),
+    value:+document.getElementById('quickValue').value,
+    extra: extraEl ? extraEl.value : '',
+    note:document.getElementById('quickNote').value.trim()
+  };
+  const i=state.events.findIndex(x=>x.id===id);
+  if(i>=0) state.events[i]=rec; else state.events.push(rec);
+  hideQuickForm();
+  renderAll();
+  if(typeof scheduleCloudSave === 'function') scheduleCloudSave();
+}
+
+/* Better event list displays extra value */
+renderQuickEvents = function(){
+  const list=document.getElementById('quickEventsList'); if(!list) return;
+  const items=[...state.events].sort((a,b)=>new Date(b.time)-new Date(a.time)).slice(0,50).map(e=>`
+    <div class="list-item">
+      <label class="mini-check"><input class="event-check" type="checkbox" value="${e.id}"> <b>${quickLabels[e.type]||e.type}</b> · ${e.value}${e.extra ? ' · ' + escapeHtml(e.extra) : ''}</label>
+      <span class="muted">${fmt.format(new Date(e.time))} ${escapeHtml(e.note||'')}</span><br>
+      <button onclick="editEvent('${e.id}')">✏️</button>
+      <button class="danger" onclick="delEvent('${e.id}')">🗑</button>
+    </div>`).join('');
+  list.innerHTML =
+    `<div class="row wrap" style="margin-bottom:10px"><button onclick="deleteSelectedEvents()">🗑 Видалити вибрані</button><span class="badge-mini">Подій: ${state.events.length}</span></div>` + (items || '<div class="muted">Подій немає.</div>');
+};

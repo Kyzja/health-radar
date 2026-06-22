@@ -288,9 +288,15 @@
       <form id="quickForm" class="form hidden" onsubmit="saveQuickEvent(event)">
         <input type="hidden" id="quickId"/>
         <input type="hidden" id="quickType"/>
+        <div class="quick-form-head">
+          <div>
+            <div id="quickFormTitle" class="card-title">Швидка подія</div>
+            <div id="quickFormHint" class="muted">Оберіть значення і збережіть.</div>
+          </div>
+        </div>
         <label>Дата і час <input type="datetime-local" id="quickDateTime"/></label>
-        <label>Значення <input type="number" step="0.1" id="quickValue"/></label>
-        <label>Примітка <textarea id="quickNote" rows="2"></textarea></label>
+        <div id="quickDynamicFields"></div>
+        <label>Примітка <textarea id="quickNote" rows="2" placeholder="необов’язково"></textarea></label>
         <div class="row"><button class="primary">Зберегти</button><button type="button" onclick="hideQuickForm()">Скасувати</button></div>
       </form>
       <h3>Останні події</h3>

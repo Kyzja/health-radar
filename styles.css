@@ -68,3 +68,10 @@ label{display:flex;flex-direction:column;gap:6px;color:#dbe9ff;font-weight:650}i
 
 .future-weather{opacity:.58}
 .future-weather td{font-style:italic}
+
+.quick-form-head{padding:10px 12px;border:1px solid var(--border);border-radius:16px;background:rgba(96,165,250,.08)}
+.quick-options{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:8px 0 4px}
+.quick-options button{padding:10px;border-radius:12px}
+.quick-options button.active{background:var(--primary);color:white;border-color:#60a5fa}
+.quick-fields-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media(max-width:700px){.quick-options{grid-template-columns:repeat(3,1fr)}.quick-fields-grid{grid-template-columns:1fr}}
