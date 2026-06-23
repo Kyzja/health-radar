@@ -1007,3 +1007,148 @@ label{display:flex;flex-direction:column;gap:6px;color:#dbe9ff;font-weight:650}i
     max-height:245px!important;
   }
 }
+
+
+/* ===== Health Radar v1.7.0 Mobile Chart Pro ===== */
+@media (max-width: 900px){
+  .mobile-chart-pro-card{
+    overflow:hidden;
+  }
+
+  .mobile-chart-pro-title-row{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    align-items:flex-start;
+    margin-bottom:8px;
+  }
+
+  .mobile-chart-pro-hint{
+    color:#9fb1c9;
+    font-size:12px;
+    margin:4px 0 10px;
+  }
+
+  #mainChart{
+    height:300px!important;
+    max-height:300px!important;
+  }
+
+  .chart-touch-note{
+    display:none!important;
+  }
+
+  .chart-summary-grid{
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0,1fr));
+    gap:8px;
+    margin-top:12px;
+  }
+
+  .chart-summary-card{
+    border:1px solid rgba(255,255,255,.12);
+    background:rgba(255,255,255,.045);
+    border-radius:16px;
+    padding:10px;
+    min-width:0;
+  }
+
+  .chart-summary-label{
+    font-size:12px;
+    color:#cfe0ff;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    white-space:nowrap;
+  }
+
+  .chart-dot{
+    width:10px;
+    height:10px;
+    border-radius:50%;
+    display:inline-block;
+    flex:0 0 auto;
+  }
+
+  .chart-summary-value{
+    font-size:24px;
+    font-weight:900;
+    margin-top:4px;
+    line-height:1;
+  }
+
+  .chart-summary-unit{
+    font-size:11px;
+    color:#9fb1c9;
+    margin-top:4px;
+  }
+}
+
+@media (max-width:420px){
+  #mainChart{
+    height:280px!important;
+    max-height:280px!important;
+  }
+
+  .chart-summary-grid{
+    grid-template-columns:repeat(2, minmax(0,1fr));
+  }
+
+  .chart-summary-value{
+    font-size:22px;
+  }
+}
+
+
+/* ===== Health Radar v1.7.1 Force Mobile Chart ===== */
+@media (max-width: 900px){
+  #mainChart{
+    height:310px!important;
+    max-height:310px!important;
+    width:100%!important;
+  }
+
+  #tab-main .card:first-child{
+    overflow:hidden;
+  }
+
+  .chart-touch-note{
+    display:none!important;
+  }
+
+  .hr-chart-hint{
+    color:#93c5fd;
+    font-size:12px;
+    margin:6px 0 10px;
+  }
+
+  .hr-chart-summary{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:8px;
+    margin-top:12px;
+  }
+
+  .hr-chart-mini{
+    background:rgba(255,255,255,.045);
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:15px;
+    padding:10px;
+  }
+
+  .hr-chart-mini .label{
+    font-size:12px;
+    color:#cfe0ff;
+  }
+
+  .hr-chart-mini .value{
+    font-size:22px;
+    font-weight:900;
+    margin-top:3px;
+  }
+
+  .hr-chart-mini .unit{
+    font-size:11px;
+    color:#9fb1c9;
+  }
+}
