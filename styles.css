@@ -979,3 +979,31 @@ label{display:flex;flex-direction:column;gap:6px;color:#dbe9ff;font-weight:650}i
     grid-column:auto;
   }
 }
+
+
+/* ===== Health Radar v1.6.9 Chart Touch Fix ===== */
+@media (max-width: 900px){
+  #tab-main .card:first-child{
+    padding-bottom:16px;
+  }
+
+  #mainChart{
+    height:260px!important;
+    max-height:260px!important;
+  }
+
+  .chart-touch-note{
+    display:block;
+    margin-top:8px;
+    color:#93c5fd;
+    font-size:12px;
+    line-height:1.35;
+  }
+}
+
+@media (max-width: 420px){
+  #mainChart{
+    height:245px!important;
+    max-height:245px!important;
+  }
+}
