@@ -1152,3 +1152,96 @@ label{display:flex;flex-direction:column;gap:6px;color:#dbe9ff;font-weight:650}i
     color:#9fb1c9;
   }
 }
+
+
+/* ===== Health Radar v1.7.2 Clean Mobile Chart ===== */
+@media (max-width: 900px){
+  #mainChart{
+    height:230px!important;
+    max-height:230px!important;
+    width:100%!important;
+  }
+
+  #tab-main .card:first-child{
+    padding:12px!important;
+    overflow:hidden!important;
+  }
+
+  #tab-main .card:first-child .card-title{
+    font-size:15px!important;
+    margin-bottom:4px!important;
+  }
+
+  #tab-main .card:first-child .muted{
+    font-size:12px!important;
+    margin-bottom:8px!important;
+  }
+
+  #tab-main .card:first-child select{
+    min-height:42px!important;
+    font-size:15px!important;
+  }
+
+  .chart-touch-note,
+  #hrChartHint,
+  #chartSummaryGrid,
+  #hrChartSummary{
+    display:none!important;
+  }
+
+  .hr-clean-chart-hint{
+    display:block;
+    color:#93c5fd;
+    font-size:12px;
+    margin:6px 0 4px;
+  }
+
+  .hr-clean-chart-stats{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:6px;
+    margin-top:8px;
+  }
+
+  .hr-clean-stat{
+    background:rgba(255,255,255,.045);
+    border:1px solid rgba(255,255,255,.10);
+    border-radius:12px;
+    padding:7px 5px;
+    text-align:center;
+    min-width:0;
+  }
+
+  .hr-clean-stat b{
+    display:block;
+    font-size:16px;
+    line-height:1;
+  }
+
+  .hr-clean-stat span{
+    display:block;
+    margin-top:3px;
+    font-size:9px;
+    color:#9fb1c9;
+    white-space:nowrap;
+  }
+}
+
+@media (max-width:420px){
+  #mainChart{
+    height:215px!important;
+    max-height:215px!important;
+  }
+
+  .hr-clean-chart-stats{
+    grid-template-columns:repeat(4,1fr);
+  }
+
+  .hr-clean-stat b{
+    font-size:15px;
+  }
+
+  .hr-clean-stat span{
+    font-size:8.5px;
+  }
+}
