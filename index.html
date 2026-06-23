@@ -2,7 +2,7 @@
 <html lang="uk">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
   <title>Мій тиск AI — Health Radar</title>
   <link rel="manifest" href="manifest.json"/>
   <meta name="theme-color" content="#0e1628"/>
@@ -13,7 +13,7 @@
   <div class="app">
     <header class="topbar">
       <div>
-        <h1>🫀 Мій тиск AI <span class="version-badge">v1.6.6</span></h1>
+        <h1>🫀 Мій тиск AI <span class="version-badge">v1.6.7</span></h1>
         <p>Особистий медичний аналітик: тиск, пульс, ліки, погода, тригери</p>
       </div>
       <div class="top-actions">
@@ -487,6 +487,34 @@
   <script src="hotfix-165.js"></script>
   <script src="hotfix-166.js"></script>
   <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{});}</script>
+
+    <nav id="mobileBottomNav" class="mobile-bottom-nav" aria-label="Мобільна навігація">
+      <button type="button" data-tab-jump="main">📊<span>Аналітика</span></button>
+      <button type="button" data-tab-jump="entries">📝<span>Журнал</span></button>
+      <button type="button" data-tab-jump="neuro">👂<span>Невро</span></button>
+      <button type="button" data-tab-jump="meds">💊<span>Ліки</span></button>
+      <button type="button" data-open-more="1">⋯<span>Ще</span></button>
+    </nav>
+
+    <div id="mobileMoreSheet" class="mobile-sheet">
+      <div class="mobile-sheet-panel">
+        <div class="mobile-sheet-head">
+          <b>Швидкий доступ</b>
+          <button type="button" onclick="HR_MOBILE_CLOSE_MORE()">✕</button>
+        </div>
+        <div class="mobile-sheet-grid">
+          <button type="button" onclick="HR_MOBILE_OPEN('aiAssistantModal')">🤖 AI Асистент</button>
+          <button type="button" onclick="HR_MOBILE_OPEN('quickModal')">⚡ Швидкий запис</button>
+          <button type="button" onclick="HR_MOBILE_TAB('weather')">🌦 Погода</button>
+          <button type="button" onclick="HR_MOBILE_TAB('calendar')">📅 Календар</button>
+          <button type="button" onclick="HR_MOBILE_TAB('reports')">📄 PDF</button>
+          <button type="button" onclick="HR_MOBILE_OPEN_CLOUD()">☁️ Хмара</button>
+          <button type="button" onclick="HR_MOBILE_OPEN('settingsModal')">⚙️ Налаштування</button>
+        </div>
+      </div>
+    </div>
+
+  <script src="hotfix-167-mobile.js"></script>
 </body>
 </html>
 

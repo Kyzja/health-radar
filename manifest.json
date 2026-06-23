@@ -12,5 +12,6 @@
       "sizes": "any",
       "type": "image/svg+xml"
     }
-  ]
+  ],
+  "orientation": "portrait"
 }
