@@ -55,6 +55,7 @@
         <div class="row wrap cloud-actions-mini">
           <button onclick="cloudSignIn()">Google</button>
           <button onclick="cloudSaveNow()">Зберегти</button>
+          <button onclick="cloudForceLoadAndRender()">Завантажити</button>
           <label class="mini-check"><input type="checkbox" id="autoSyncToggle" onchange="toggleAutoSync()" checked> авто</label>
         </div>
       </article>
@@ -459,7 +460,7 @@
           <div class="list">
             <button class="primary" onclick="cloudSignIn()">🔐 Увійти через Google</button>
             <button onclick="cloudSaveNow()">⬆️ Зберегти локальні дані в хмару</button>
-            <button onclick="cloudLoadNow()">⬇️ Завантажити дані з хмари</button>
+            <button onclick="cloudForceLoadAndRender()">⬇️ Завантажити дані з хмари</button>
             <button onclick="cloudMergeNow()">🔄 Об’єднати локальні + хмарні</button>
             <button onclick="cloudSignOut()">🚪 Вийти</button>
           </div>

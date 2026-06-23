@@ -3,9 +3,8 @@ const STORE_KEY = 'healthRadarAI_v1';
 const fmt = new Intl.DateTimeFormat('uk-UA', {dateStyle:'short', timeStyle:'short'});
 let chart;
 
-var state = loadState();
-window.state = state;
-init();
+var state = window.state = loadState();
+window.addEventListener('DOMContentLoaded', init);
 
 function defaultState(){
   return {
@@ -15,28 +14,7 @@ function defaultState(){
   };
 }
 function loadState(){ try{return {...defaultState(), ...JSON.parse(localStorage.getItem(STORE_KEY)||'{}')}}catch(e){return defaultState()} }
-function normalizeStateData(data={}){
-  const d = defaultState();
-  return {
-    ...d,
-    ...data,
-    settings:{...d.settings, ...(data.settings||{})},
-    city:data.city || d.city,
-    bp:Array.isArray(data.bp)?data.bp:[],
-    meds:Array.isArray(data.meds)?data.meds:[],
-    events:Array.isArray(data.events)?data.events:[],
-    weather:Array.isArray(data.weather)?data.weather:[]
-  };
-}
-function setAppState(data){
-  state = normalizeStateData(data);
-  window.state = state;
-  return state;
-}
-function saveState(){
-  window.state = state;
-  localStorage.setItem(STORE_KEY, JSON.stringify(state));
-}
+function saveState(){ window.state = state; localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
 function uid(){ return Math.random().toString(36).slice(2)+Date.now().toString(36); }
 function nowLocalInput(d=new Date()){ const z=new Date(d.getTime()-d.getTimezoneOffset()*60000); return z.toISOString().slice(0,16); }
 function dateOnly(d){ return new Date(d).toISOString().slice(0,10); }
