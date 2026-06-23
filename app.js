@@ -3,8 +3,9 @@ const STORE_KEY = 'healthRadarAI_v1';
 const fmt = new Intl.DateTimeFormat('uk-UA', {dateStyle:'short', timeStyle:'short'});
 let chart;
 
-var state = window.state = loadState();
-window.addEventListener('DOMContentLoaded', init);
+var state = loadState();
+window.state = state;
+init();
 
 function defaultState(){
   return {
@@ -14,7 +15,28 @@ function defaultState(){
   };
 }
 function loadState(){ try{return {...defaultState(), ...JSON.parse(localStorage.getItem(STORE_KEY)||'{}')}}catch(e){return defaultState()} }
-function saveState(){ window.state = state; localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+function normalizeStateData(data={}){
+  const d = defaultState();
+  return {
+    ...d,
+    ...data,
+    settings:{...d.settings, ...(data.settings||{})},
+    city:data.city || d.city,
+    bp:Array.isArray(data.bp)?data.bp:[],
+    meds:Array.isArray(data.meds)?data.meds:[],
+    events:Array.isArray(data.events)?data.events:[],
+    weather:Array.isArray(data.weather)?data.weather:[]
+  };
+}
+function setAppState(data){
+  state = normalizeStateData(data);
+  window.state = state;
+  return state;
+}
+function saveState(){
+  window.state = state;
+  localStorage.setItem(STORE_KEY, JSON.stringify(state));
+}
 function uid(){ return Math.random().toString(36).slice(2)+Date.now().toString(36); }
 function nowLocalInput(d=new Date()){ const z=new Date(d.getTime()-d.getTimezoneOffset()*60000); return z.toISOString().slice(0,16); }
 function dateOnly(d){ return new Date(d).toISOString().slice(0,10); }
@@ -361,11 +383,26 @@ function reportRange(){
   else if(p==='custom'){ from=new Date(document.getElementById('reportFrom').value+'T00:00:00'); to=new Date(document.getElementById('reportTo').value+'T23:59:59'); }
   return {from,to};
 }
+
+/* ===== Health Radar v1.6.4: report event de-duplication ===== */
+function uniqueReportEvents(events){
+  const map = new Map();
+  (events || []).forEach(e => {
+    const t = new Date(e.time);
+    // Дублі часто з'являються при повторному кліку/синхронізації в одну хвилину.
+    // Для звіту залишаємо один запис з однаковими: хвилина + тип + значення + примітка + extra.
+    const minuteKey = isNaN(t) ? String(e.time || '') : t.toISOString().slice(0,16);
+    const key = [minuteKey, e.type || '', String(e.value ?? ''), e.note || '', e.extra || ''].join('|');
+    if(!map.has(key)) map.set(key, e);
+  });
+  return Array.from(map.values()).sort((a,b)=>new Date(a.time)-new Date(b.time));
+}
+
 function generatePDFReport(){
   const {from,to}=reportRange(); const type=document.getElementById('reportType').value;
   const bp=state.bp.filter(x=>new Date(x.time)>=from&&new Date(x.time)<=to);
   const meds=state.meds.filter(x=>new Date(x.time)>=from&&new Date(x.time)<=to);
-  const ev=state.events.filter(x=>new Date(x.time)>=from&&new Date(x.time)<=to);
+  const ev=uniqueReportEvents(state.events.filter(x=>new Date(x.time)>=from&&new Date(x.time)<=to));
   const w=state.weather.filter(x=>new Date(x.time)>=from&&new Date(x.time)<=to);
   const win=window.open('', '_blank');
   const title= type==='doctor'?'Короткий звіт для лікаря':type==='full'?'Повний звіт':type==='weather'?'Звіт погоди':'Журнал вимірювань';

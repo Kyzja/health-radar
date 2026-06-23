@@ -50,8 +50,8 @@ function initHealthRadarCloud(){
       cloudUser = user || null;
       updateCloudUI();
       if (cloudUser) {
+        await cloudSmartSyncOnLogin();
         startCloudListener();
-        await cloudMergeNow(true);
       } else {
         stopCloudListener();
       }
@@ -67,11 +67,40 @@ function cloudDocRef(){
   return cloudDb.collection('users').doc(cloudUser.uid).collection('healthRadar').doc('state');
 }
 
+function normalizeCloudStateData(data={}){
+  const d = (typeof defaultState === 'function') ? defaultState() : {settings:{}, city:null, bp:[], meds:[], events:[], weather:[]};
+  return {
+    ...d,
+    ...data,
+    settings:{...(d.settings||{}), ...(data.settings||{})},
+    city:data.city || d.city,
+    bp:Array.isArray(data.bp)?data.bp:[],
+    meds:Array.isArray(data.meds)?data.meds:[],
+    events:Array.isArray(data.events)?data.events:[],
+    weather:Array.isArray(data.weather)?data.weather:[]
+  };
+}
+
+function applyCloudStateToApp(data){
+  const normalized = normalizeCloudStateData(data || {});
+  if (typeof setAppState === 'function') {
+    setAppState(normalized);
+  } else {
+    window.state = normalized;
+    try { state = normalized; } catch(e) {}
+  }
+  return normalized;
+}
+
+function cloudRecordCount(data){
+  return ['bp','meds','events','weather'].reduce((sum,k)=>sum + ((data && Array.isArray(data[k])) ? data[k].length : 0), 0);
+}
+
 function safeCloudState(){
   const copy = JSON.parse(JSON.stringify(window.state || {}));
   copy.__cloudMeta = {
     updatedAt: new Date().toISOString(),
-    appVersion: 'Health Radar Cloud 1.0'
+    appVersion: 'Health Radar Cloud 1.6.3'
   };
   return copy;
 }
@@ -92,6 +121,48 @@ function scheduleCloudSave(){
   if (!cloudUser || cloudSaving) return;
   clearTimeout(cloudDebounceTimer);
   cloudDebounceTimer = setTimeout(() => cloudSaveNow(true), 1800);
+}
+
+
+async function cloudSmartSyncOnLogin(){
+  const ref = cloudDocRef();
+  if (!ref) return;
+  try {
+    const snap = await ref.get();
+    if (!snap.exists) {
+      if (cloudRecordCount(window.state) > 0) {
+        await cloudSaveNow(true);
+      } else {
+        setCloudStatus('☁️ Увійшли. У хмарі поки немає даних.');
+      }
+      return;
+    }
+
+    const raw = snap.data() || {};
+    const meta = raw.__cloudMeta || null;
+    const cloudData = {...raw};
+    delete cloudData.__cloudMeta;
+
+    const localCount = cloudRecordCount(window.state);
+    const cloudCount = cloudRecordCount(cloudData);
+
+    if (cloudCount > 0 && localCount === 0) {
+      applyCloudStateToApp(cloudData);
+      const oldUser = cloudUser;
+      cloudUser = null;
+      if (typeof saveState === 'function') saveState();
+      cloudUser = oldUser;
+      if (typeof renderAll === 'function') renderAll();
+      lastCloudUpdatedAt = meta?.updatedAt || null;
+      setCloudStatus('⬇️ Автоматично завантажено з хмари: ' + cloudCount + ' записів');
+      return;
+    }
+
+    await cloudMergeNow(true);
+  } catch (err) {
+    console.error(err);
+    setCloudStatus('❌ Помилка автозавантаження з хмари: ' + err.message);
+  }
 }
 
 async function cloudSignIn(){
@@ -149,8 +220,7 @@ async function cloudLoadNow(silent=false){
     const data = snap.data();
     const meta = data.__cloudMeta || null;
     delete data.__cloudMeta;
-    window.state = data;
-    if (typeof state !== 'undefined') state = window.state;
+    applyCloudStateToApp(data);
     if (typeof saveState === 'function') {
       const oldUser = cloudUser;
       cloudUser = null; // prevent immediate re-upload during local save
@@ -186,8 +256,7 @@ async function cloudMergeNow(silent=false){
     delete cloudData.__cloudMeta;
 
     const merged = mergeHealthStates(window.state || {}, cloudData || {});
-    window.state = merged;
-    if (typeof state !== 'undefined') state = window.state;
+    applyCloudStateToApp(merged);
 
     const oldUser = cloudUser;
     cloudUser = null;
@@ -209,7 +278,7 @@ async function cloudMergeNow(silent=false){
 function mergeHealthStates(local, cloud){
   const base = Object.assign({}, cloud, local);
   base.settings = Object.assign({}, cloud.settings || {}, local.settings || {});
-  base.city = local.city || cloud.city || base.city;
+  base.city = (local.city && local.city.name && cloudRecordCount(local) > 0) ? local.city : (cloud.city || local.city || base.city);
 
   ['bp','meds','events','weather'].forEach(key => {
     const map = new Map();
@@ -317,13 +386,4 @@ if (typeof scheduleCloudSave === 'function' && !window.__scheduleCloudSavePatche
     if (!isAutoSyncEnabled()) return;
     return __oldScheduleCloudSave.apply(this, arguments);
   };
-}
-
-
-/* Cloud Sync 1.6.3: explicit load helper for phone/PC sync */
-async function cloudForceLoadAndRender(){
-  await cloudLoadNow(true);
-  if (typeof state !== 'undefined') state = window.state;
-  if (typeof renderAll === 'function') renderAll();
-  setCloudStatus('⬇️ Дані підтягнуто з хмари на цей пристрій.');
 }
