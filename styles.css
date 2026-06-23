@@ -134,3 +134,8 @@ label{display:flex;flex-direction:column;gap:6px;color:#dbe9ff;font-weight:650}i
   font-size:12px;
   margin-top:4px;
 }
+
+.section-subtitle{margin:16px 0 8px;font-size:16px}
+.dedup-note{color:#93c5fd;font-size:12px;margin-top:6px}
+.event-pill{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.event-pill .actions{white-space:nowrap}

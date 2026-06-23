@@ -13,7 +13,7 @@
   <div class="app">
     <header class="topbar">
       <div>
-        <h1>🫀 Мій тиск AI <span class="version-badge">v1.6.4</span></h1>
+        <h1>🫀 Мій тиск AI <span class="version-badge">v1.6.5</span></h1>
         <p>Особистий медичний аналітик: тиск, пульс, ліки, погода, тригери</p>
       </div>
       <div class="top-actions">
@@ -153,6 +153,8 @@
               <button onclick="HR_FORCE_QUICK('dizziness')">😵 Запаморочення</button>
               <button onclick="HR_FORCE_QUICK('fatigue')">😴 Втома</button>
             </div>
+            <h3 class="section-subtitle">Останні події</h3>
+            <div id="neuroRecentEvents" class="list"></div>
             <div id="neuroTable" class="table-wrap"></div>
           </article>
           <article class="card">
@@ -482,6 +484,7 @@
   <script src="firebase-cloud.js"></script>
   <script src="hotfix-161.js"></script>
   <script src="weather-card-fix-162.js"></script>
+  <script src="hotfix-165.js"></script>
   <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{});}</script>
 </body>
 </html>

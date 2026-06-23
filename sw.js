@@ -1,4 +1,4 @@
-const CACHE='health-radar-ai-v1-6-4';
+const CACHE='health-radar-ai-v1-6-5';
 const ASSETS=['./','./index.html','./styles.css','./app.js','./quick-fix.js','./firebase-cloud.js','./hotfix-161.js','./weather-card-fix-162.js','./manifest.json','./icon.svg'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS))));
 self.addEventListener('fetch',e=>e.respondWith(fetch(e.request).catch(()=>caches.match(e.request))));
