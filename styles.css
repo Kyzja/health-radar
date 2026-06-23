@@ -578,3 +578,404 @@ label{display:flex;flex-direction:column;gap:6px;color:#dbe9ff;font-weight:650}i
     display:none!important;
   }
 }
+
+
+/* ===== Health Radar v1.6.8 Mobile Polish ===== */
+
+@media (max-width: 900px){
+
+  :root{
+    --mobile-nav-h: 68px;
+  }
+
+  body{
+    font-size:14px;
+  }
+
+  .app{
+    padding:10px 10px calc(82px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .topbar{
+    gap:10px;
+  }
+
+  .topbar h1{
+    font-size:21px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  .topbar p{
+    font-size:12px;
+    max-width:100%;
+  }
+
+  .top-actions{
+    grid-template-columns:repeat(4, 1fr);
+    gap:7px;
+  }
+
+  .top-actions button{
+    min-height:50px;
+    font-size:11px;
+    padding:7px 4px;
+    border-radius:14px;
+  }
+
+  .dashboard{
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    gap:9px;
+  }
+
+  .dashboard .card{
+    min-width:0;
+    min-height:112px;
+  }
+
+  .status-card{
+    grid-column:auto;
+  }
+
+  .cloud-card{
+    grid-column:1 / -1;
+  }
+
+  .card{
+    padding:12px;
+    border-radius:18px;
+    min-width:0;
+  }
+
+  .card-title{
+    font-size:14px;
+    line-height:1.2;
+  }
+
+  .big,.day-badge{
+    font-size:26px;
+    line-height:1.05;
+    word-break:break-word;
+  }
+
+  .muted{
+    font-size:12px;
+    line-height:1.35;
+  }
+
+  .tabs{
+    margin:8px -10px 10px;
+    padding:8px 10px;
+    gap:7px;
+    max-width:calc(100vw);
+  }
+
+  .tab{
+    padding:9px 11px;
+    font-size:12px;
+    border-radius:13px;
+  }
+
+  .tab-panel{
+    max-width:100%;
+    overflow:hidden;
+  }
+
+  .grid.two{
+    grid-template-columns:1fr!important;
+    gap:10px;
+  }
+
+  .card-head{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:10px;
+  }
+
+  .card-head select,
+  .card-head button{
+    width:100%;
+  }
+
+  #mainChart{
+    height:210px!important;
+    max-height:210px!important;
+  }
+
+  /* Better chart card */
+  #tab-main .card:first-child{
+    overflow:hidden;
+  }
+
+  #tab-main .card:first-child .muted{
+    max-width:100%;
+  }
+
+  /* Compact AI text on mobile */
+  .ai-box{
+    font-size:14px;
+    line-height:1.45;
+    max-height:none;
+    overflow-wrap:anywhere;
+  }
+
+  #aiFull{
+    max-height:360px;
+    overflow:auto;
+  }
+
+  /* Weather tab layout */
+  #tab-weather .grid.two{
+    grid-template-columns:1fr!important;
+  }
+
+  #tab-weather .card{
+    overflow:hidden;
+  }
+
+  #tab-weather .row,
+  #tab-weather .wrap{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+    width:100%;
+  }
+
+  #tab-weather input,
+  #tab-weather select,
+  #tab-weather button{
+    width:100%;
+    min-width:0;
+  }
+
+  #tab-weather button{
+    white-space:normal;
+  }
+
+  #cityInput{
+    grid-column:1 / -1;
+  }
+
+  /* Medicines tab */
+  #tab-meds .card-head{
+    grid-template-columns:1fr;
+  }
+
+  #tab-meds .card-head button{
+    width:100%;
+    max-width:none;
+  }
+
+  #tab-meds .table-wrap{
+    width:100%;
+    overflow-x:auto;
+  }
+
+  #tab-meds table{
+    min-width:520px;
+  }
+
+  #tab-meds th,
+  #tab-meds td{
+    white-space:nowrap;
+  }
+
+  #tab-meds td:nth-child(4){
+    white-space:normal;
+    min-width:140px;
+  }
+
+  /* Neuro */
+  #tab-neuro .quick-grid{
+    grid-template-columns:1fr 1fr!important;
+    gap:8px;
+  }
+
+  #tab-neuro .quick-grid button{
+    min-height:54px;
+    font-size:13px;
+    padding:8px;
+  }
+
+  #neuroRecentList .neuro-event-card,
+  .neuro-event-card{
+    display:grid!important;
+    grid-template-columns:1fr auto!important;
+    align-items:center;
+    gap:8px;
+    padding:10px 10px!important;
+  }
+
+  .neuro-event-card .actions,
+  .neuro-actions{
+    display:flex!important;
+    gap:6px;
+  }
+
+  .neuro-event-card button,
+  .neuro-actions button{
+    width:34px!important;
+    height:34px!important;
+    min-height:34px!important;
+    padding:0!important;
+    border-radius:10px!important;
+    font-size:14px!important;
+  }
+
+  /* Tables: avoid page overflow */
+  .table-wrap{
+    margin-left:-2px;
+    margin-right:-2px;
+    max-width:100%;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+
+  table{
+    min-width:540px;
+  }
+
+  th,td{
+    font-size:12px;
+    padding:8px 7px;
+  }
+
+  .actions{
+    white-space:nowrap;
+  }
+
+  .actions button{
+    min-height:32px;
+    padding:5px 7px;
+  }
+
+  /* Inputs and modals */
+  button,.filebtn,select,input,textarea{
+    font-size:15px;
+    min-height:42px;
+    max-width:100%;
+  }
+
+  .modal-content{
+    padding:14px 12px calc(18px + env(safe-area-inset-bottom,0px));
+  }
+
+  .modal-head h2{
+    font-size:19px;
+  }
+
+  .quick-options{
+    display:grid!important;
+    grid-template-columns:repeat(5, 1fr);
+    gap:7px;
+  }
+
+  .quick-options button{
+    min-height:42px;
+    padding:6px;
+  }
+
+  .quick-fields-grid,
+  .form-grid{
+    grid-template-columns:1fr!important;
+  }
+
+  /* Bottom nav smaller and cleaner */
+  .mobile-bottom-nav{
+    min-height:calc(68px + env(safe-area-inset-bottom, 0px));
+    padding:6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .mobile-bottom-nav button{
+    min-height:50px;
+    font-size:18px;
+    border-radius:15px;
+  }
+
+  .mobile-bottom-nav button span{
+    font-size:10.5px;
+  }
+
+  /* Prevent bottom nav hiding last content */
+  main{
+    padding-bottom:14px;
+  }
+
+  .tab-panel > .card:last-child,
+  .tab-panel > .grid:last-child{
+    margin-bottom:16px;
+  }
+}
+
+@media (max-width: 420px){
+  .app{
+    padding-left:8px;
+    padding-right:8px;
+  }
+
+  .tabs{
+    margin-left:-8px;
+    margin-right:-8px;
+    padding-left:8px;
+    padding-right:8px;
+  }
+
+  .dashboard{
+    gap:8px;
+  }
+
+  .card{
+    padding:11px;
+    border-radius:16px;
+  }
+
+  .big,.day-badge{
+    font-size:24px;
+  }
+
+  .card-title{
+    font-size:13.5px;
+  }
+
+  .muted{
+    font-size:11.5px;
+  }
+
+  .top-actions button{
+    min-height:48px;
+    font-size:10.5px;
+  }
+
+  #mainChart{
+    height:190px!important;
+    max-height:190px!important;
+  }
+
+  table{
+    min-width:500px;
+  }
+
+  #tab-weather .row,
+  #tab-weather .wrap{
+    grid-template-columns:1fr;
+  }
+
+  #tab-neuro .quick-grid{
+    grid-template-columns:1fr!important;
+  }
+
+  #tab-neuro .quick-grid button{
+    min-height:50px;
+  }
+}
+
+/* Very narrow phones: dashboard one column for readability */
+@media (max-width: 360px){
+  .dashboard{
+    grid-template-columns:1fr;
+  }
+  .cloud-card{
+    grid-column:auto;
+  }
+}
